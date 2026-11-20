@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "roadsigns"
+version = "0.1.0"
+description = "Road sign detection and recognition for ADAS (academic prototype)"
+requires-python = ">=3.11,<3.14"
+readme = "README.md"
+# Runtime dependencies are pinned in requirements.txt (PyTorch is installed separately).
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
