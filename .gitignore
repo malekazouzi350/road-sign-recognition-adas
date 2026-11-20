@@ -1,0 +1,68 @@
+# ---------------------------------------------------------------
+# Road Sign Detection & Recognition — .gitignore
+# Datasets and model weights are large binaries: never commit them.
+# See data/README.md and models/README.md for how to obtain them.
+# ---------------------------------------------------------------
+
+# --- Datasets (raw downloads, converted YOLO data, crops) ---
+data/raw/
+data/processed/
+*.zip
+*.ppm
+
+# --- Model weights and training outputs ---
+*.pt
+*.pth
+*.onnx
+*.engine
+*.torchscript
+runs/
+models/weights/
+models/pretrained/
+
+# --- Generated results that are large or temporary ---
+# (metrics JSON and selected plots in results/ ARE committed)
+results/tmp/
+results/videos/
+*.mp4
+*.avi
+*.mov
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# --- Virtual environments ---
+.venv/
+venv/
+env/
+
+# --- Testing / tooling ---
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# --- Jupyter ---
+.ipynb_checkpoints/
+
+# --- Streamlit secrets ---
+.streamlit/secrets.toml
+
+# --- Editors / OS ---
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Local environment / secrets ---
+.env
+*.log

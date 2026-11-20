@@ -1,0 +1,37 @@
+# ---------------------------------------------------------------
+# Road Sign Detection & Recognition — Python dependencies
+#
+# Target: Python 3.12 (3.11–3.13 work; 3.10 is NOT supported by PyTorch 2.15)
+#
+# IMPORTANT: install PyTorch FIRST, separately, with the right index URL
+# for your machine (see README → Installation). If you skip that step,
+# installing ultralytics pulls a default torch build that may not use your GPU.
+#
+#   NVIDIA GPU (driver >= 580):
+#     pip install "torch==2.15.*" "torchvision==0.29.*" --index-url https://download.pytorch.org/whl/cu132
+#   CPU only:
+#     pip install "torch==2.15.*" "torchvision==0.29.*" --index-url https://download.pytorch.org/whl/cpu
+#
+# Then:
+#     pip install -r requirements.txt
+# ---------------------------------------------------------------
+
+# --- Detection / computer vision ---
+ultralytics==8.4.216        # YOLO26 training, validation, inference (AGPL-3.0)
+opencv-python>=5.1,<6       # image/video I/O, drawing
+numpy>=2.2,<3
+
+# --- Data handling & evaluation ---
+pandas>=3.0,<4
+scikit-learn>=1.8,<2        # classification metrics, stratified splits
+pyyaml>=6.0
+
+# --- Visualization ---
+matplotlib>=3.10,<4
+seaborn>=0.13,<0.14
+
+# --- Application ---
+streamlit==1.67.0
+
+# --- Development ---
+pytest>=9.0,<10
