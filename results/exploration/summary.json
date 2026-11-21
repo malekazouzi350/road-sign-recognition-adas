@@ -1,0 +1,43 @@
+{
+  "gt_txt_lines": 1213,
+  "annotations": 1213,
+  "exact_duplicate_lines": 1,
+  "near_duplicate_pairs": 1,
+  "images": 900,
+  "unreadable_images": 0,
+  "image_sizes": {
+    "1360x800": 900
+  },
+  "boxes_out_of_bounds": 0,
+  "images_with_signs": 741,
+  "images_without_signs": 159,
+  "max_signs_per_image": 6,
+  "classes_absent": [],
+  "classes_lt5_train": 9,
+  "most_frequent_class": "Keep right",
+  "super_categories": {
+    "prohibitory": 557,
+    "danger": 219,
+    "mandatory": 163,
+    "other": 274
+  },
+  "size_px": {
+    "min": 17,
+    "median": 39.0,
+    "max": 129,
+    "pct_below_32": 0.308
+  },
+  "median_size_at_imgsz": {
+    "640": 18.4,
+    "1024": 29.4,
+    "1280": 36.7
+  },
+  "pct_right_half": 0.656,
+  "pct_upper_half": 0.238,
+  "gtsrb": {
+    "images": 39209,
+    "tracks": 1307,
+    "median_size_px": 44.0,
+    "ratio_vs_gtsdb_train": 46.0
+  }
+}
