@@ -1,0 +1,101 @@
+{
+  "description": "Team CNN trained on GTSRB only, evaluated on all GTSDB scene signs (transfer test).",
+  "trained_on_gtsdb": false,
+  "date_utc": "2026-11-21T09:23:14+00:00",
+  "weights": "classifier_best.pt",
+  "trained_epoch": 10,
+  "device": "cuda",
+  "classes_present": 43,
+  "jitter": 0.15,
+  "seed": 0,
+  "exact_boxes": {
+    "n": 1212,
+    "accuracy": 0.9959,
+    "macro_f1_present_classes": 0.9949,
+    "super_category_accuracy": 1.0,
+    "errors": 5,
+    "mean_confidence_correct": 0.9808,
+    "mean_confidence_wrong": 0.4103,
+    "by_size": {
+      "< 32 px": {
+        "n": 372,
+        "accuracy": 0.9973
+      },
+      "32-48 px": {
+        "n": 437,
+        "accuracy": 0.9931
+      },
+      "48-64 px": {
+        "n": 197,
+        "accuracy": 0.9949
+      },
+      ">= 64 px": {
+        "n": 206,
+        "accuracy": 1.0
+      }
+    },
+    "by_super_category": {
+      "prohibitory": {
+        "n": 557,
+        "accuracy": 0.9946
+      },
+      "danger": {
+        "n": 219,
+        "accuracy": 0.9909
+      },
+      "mandatory": {
+        "n": 163,
+        "accuracy": 1.0
+      },
+      "other": {
+        "n": 273,
+        "accuracy": 1.0
+      }
+    }
+  },
+  "jittered_boxes": {
+    "n": 1212,
+    "accuracy": 0.9934,
+    "macro_f1_present_classes": 0.9886,
+    "super_category_accuracy": 0.9983,
+    "errors": 8,
+    "mean_confidence_correct": 0.9122,
+    "mean_confidence_wrong": 0.3979,
+    "by_size": {
+      "< 32 px": {
+        "n": 372,
+        "accuracy": 0.9919
+      },
+      "32-48 px": {
+        "n": 437,
+        "accuracy": 0.9908
+      },
+      "48-64 px": {
+        "n": 197,
+        "accuracy": 0.9949
+      },
+      ">= 64 px": {
+        "n": 206,
+        "accuracy": 1.0
+      }
+    },
+    "by_super_category": {
+      "prohibitory": {
+        "n": 557,
+        "accuracy": 0.9964
+      },
+      "danger": {
+        "n": 219,
+        "accuracy": 0.9817
+      },
+      "mandatory": {
+        "n": 163,
+        "accuracy": 0.9939
+      },
+      "other": {
+        "n": 273,
+        "accuracy": 0.9963
+      }
+    }
+  }
+}
