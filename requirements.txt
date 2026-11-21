@@ -35,3 +35,4 @@ streamlit==1.67.0
 
 # --- Development ---
 pytest>=9.0,<10
+ipykernel>=7.0,<8
