@@ -1,0 +1,27 @@
+{
+  "description": "Team-written CNN trained on GTSRB, evaluated on held-out tracks.",
+  "trained_by_team": true,
+  "date_utc": "2026-11-21T00:52:45+00:00",
+  "device": "cuda",
+  "parameters": 1478411,
+  "split": "by track, 70/15/15 per class, seed 0",
+  "images": {
+    "train": 27509,
+    "val": 5850,
+    "test": 5850
+  },
+  "epochs": 15,
+  "best_epoch": 10,
+  "best_val_acc": 0.9937,
+  "test_accuracy": 0.9969,
+  "test_macro_f1": 0.9966,
+  "test_errors": 18,
+  "worst_classes_f1": {
+    "20 Dangerous curve to the right": 0.9744,
+    "21 Double curve": 0.9744,
+    "11 Right-of-way at the next intersection": 0.9808,
+    "27 Pedestrians": 0.9831,
+    "25 Road work": 0.9877
+  },
+  "training_minutes": 18.6
+}
