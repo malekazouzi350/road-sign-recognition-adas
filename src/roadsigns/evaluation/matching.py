@@ -75,3 +75,27 @@ def match_boxes(
         else:
             fp += 1
     return MatchResult(tp=tp, fp=fp, fn=len(ground_truth) - len(used), matched_gt=tuple(sorted(used)))
+
+
+def match_pairs(
+    predictions: Sequence[tuple[Box, float]],
+    ground_truth: Sequence[Box],
+    iou_threshold: float = 0.5,
+) -> list[tuple[int, int]]:
+    """Same greedy rule as match_boxes, but return the (prediction index, ground-truth index)
+    pairs, so the caller can compare the classes of matched boxes."""
+    order = sorted(range(len(predictions)), key=lambda i: predictions[i][1], reverse=True)
+    used: set[int] = set()
+    pairs: list[tuple[int, int]] = []
+    for i in order:
+        best_j, best_iou = -1, iou_threshold
+        for j, gt_box in enumerate(ground_truth):
+            if j in used:
+                continue
+            value = iou(predictions[i][0], gt_box)
+            if value >= best_iou:
+                best_j, best_iou = j, value
+        if best_j >= 0:
+            used.add(best_j)
+            pairs.append((i, best_j))
+    return pairs
