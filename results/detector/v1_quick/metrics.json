@@ -1,0 +1,53 @@
+{
+  "description": "YOLO26 detector fine-tuned by the team on GTSDB, evaluated on the official test images.",
+  "trained_by_team": true,
+  "date_utc": "2026-11-21T10:34:28+00:00",
+  "run": "v1_quick",
+  "start_weights": "yolo26n.pt",
+  "data": "data.yaml",
+  "classes": [
+    "prohibitory",
+    "danger",
+    "mandatory",
+    "other"
+  ],
+  "imgsz": 1024,
+  "batch": 4,
+  "epochs_requested": 25,
+  "device": "0",
+  "amp": false,
+  "test": {
+    "precision": 0.9756,
+    "recall": 0.9533,
+    "mAP50": 0.977,
+    "mAP50_95": 0.8603
+  },
+  "test_per_class": {
+    "prohibitory": {
+      "precision": 0.9949,
+      "recall": 0.9938,
+      "mAP50": 0.995,
+      "mAP50_95": 0.8923
+    },
+    "danger": {
+      "precision": 1.0,
+      "recall": 0.9738,
+      "mAP50": 0.985,
+      "mAP50_95": 0.853
+    },
+    "mandatory": {
+      "precision": 0.9353,
+      "recall": 0.8571,
+      "mAP50": 0.9351,
+      "mAP50_95": 0.8336
+    },
+    "other": {
+      "precision": 0.9722,
+      "recall": 0.9886,
+      "mAP50": 0.993,
+      "mAP50_95": 0.8624
+    }
+  },
+  "inference_ms_per_image": 10.3,
+  "training_minutes": 20.2
+}
