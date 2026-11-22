@@ -1,0 +1,48 @@
+/* Road-sign ADAS: turquoise / green identity (same as the slides) */
+:root {
+  --rs-ink: #16313a;
+  --rs-muted: #536f77;
+  --rs-line: #d4e6e3;
+  --rs-teal: #0b7a7c;
+  --rs-teal-soft: #dcf1ee;
+  --rs-green: #1f7f52;
+  --rs-coral: #c4514a;
+}
+
+/* Page width and spacing */
+.block-container { padding-top: 2.2rem; max-width: 1200px; }
+
+/* Header */
+.rs-kicker { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.rs-tag { background: var(--rs-teal); color: #fff; font-weight: 700; font-size: 0.85rem;
+          padding: 2px 10px; border-radius: 6px; }
+.rs-label { color: var(--rs-teal); font-weight: 600; font-size: 0.85rem;
+            letter-spacing: 0.08em; text-transform: uppercase; }
+.rs-title { font-size: 2.1rem; font-weight: 700; color: var(--rs-ink); margin: 0 0 4px 0; line-height: 1.15; }
+.rs-subtitle { color: var(--rs-muted); font-size: 1.05rem; margin: 0 0 18px 0; }
+
+/* Key-number cards */
+.rs-kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin: 8px 0 18px; }
+.rs-kpi { background: #fff; border: 1px solid var(--rs-line); border-radius: 10px; padding: 16px 18px; }
+.rs-kpi-value { font-size: 2rem; font-weight: 700; line-height: 1.1; color: var(--rs-teal); }
+.rs-green .rs-kpi-value { color: var(--rs-green); }
+.rs-coral .rs-kpi-value { color: var(--rs-coral); }
+.rs-grey .rs-kpi-value { color: var(--rs-muted); }
+.rs-kpi-label { font-weight: 600; color: var(--rs-ink); margin-top: 6px; }
+.rs-kpi-detail { color: var(--rs-muted); font-size: 0.9rem; margin-top: 2px; }
+
+/* Status lines */
+.rs-status { padding: 4px 0; color: var(--rs-ink); }
+.rs-ok span { color: var(--rs-green); }
+.rs-missing { color: var(--rs-muted); }
+.rs-missing span { color: var(--rs-coral); }
+
+/* "Not evaluated yet" box */
+.rs-empty { background: #fff8e8; border: 1px solid #f1dfb3; border-radius: 10px;
+            padding: 12px 16px; color: #6e4706; margin: 6px 0 14px; }
+.rs-empty span { color: #8a6a2b; font-size: 0.9rem; }
+
+/* Sidebar brand */
+.rs-brand { display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--rs-ink); font-size: 1.05rem; }
+.rs-dot { width: 11px; height: 11px; border-radius: 50%; display: inline-block; }
+.rs-brand-sub { color: var(--rs-muted); font-size: 0.82rem; margin-top: 2px; }

@@ -1,0 +1,17 @@
+# Streamlit theme: same turquoise / green identity as the project slides.
+# Run the app from the repository root:  streamlit run app/app.py
+
+[theme]
+base = "light"
+primaryColor = "#0b7a7c"
+backgroundColor = "#f2f8f7"
+secondaryBackgroundColor = "#ffffff"
+textColor = "#16313a"
+borderColor = "#d4e6e3"
+font = "sans-serif"
+
+[client]
+toolbarMode = "minimal"
+
+[browser]
+gatherUsageStats = false
