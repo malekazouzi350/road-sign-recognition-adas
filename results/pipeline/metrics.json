@@ -1,7 +1,7 @@
 {
   "description": "Complete pipeline (team detector + team CNN) on the official GTSDB test images.",
   "trained_by_team": true,
-  "date_utc": "2026-11-22T23:05:45+00:00",
+  "date_utc": "2026-11-23T17:37:36+00:00",
   "detector": "detector_v1_quick.pt",
   "classifier": "classifier_best.pt",
   "device": "cuda",
@@ -9,14 +9,15 @@
   "det_conf": 0.25,
   "cnn_conf": 0.6,
   "iou": 0.5,
+  "merge_iou": 0.6,
   "ground_truth_signs": 361,
-  "predicted_boxes": 377,
+  "predicted_boxes": 376,
   "detection": {
     "found": 355,
     "missed": 6,
-    "false_alarms": 22,
+    "false_alarms": 21,
     "recall": 0.9834,
-    "precision": 0.9416
+    "precision": 0.9441
   },
   "recognition_of_found_signs": {
     "correct": 355,
@@ -75,6 +76,6 @@
       "fallback": 7
     }
   },
-  "median_ms_per_image": 21.8,
+  "median_ms_per_image": 33.5,
   "wrong_name_examples": []
 }

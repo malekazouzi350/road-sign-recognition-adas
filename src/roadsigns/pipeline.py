@@ -30,6 +30,7 @@ import torch
 from roadsigns.classification.data import crop_and_resize, preprocess_crop
 from roadsigns.classification.model import TrafficSignCNN
 from roadsigns.datasets.gtsdb import CLASS_NAMES, NUM_CLASSES, SUPER_CATEGORIES, super_category_id
+from roadsigns.evaluation.matching import iou
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_DETECTOR = REPO_ROOT / "models" / "weights" / "detector_v1_quick.pt"
@@ -109,6 +110,7 @@ class RoadSignPipeline:
         det_conf: float = 0.25,
         cnn_conf: float = 0.60,
         imgsz: int = 1024,
+        merge_iou: float | None = 0.6,
     ) -> None:
         detector_weights, classifier_weights = Path(detector_weights), Path(classifier_weights)
         for p, what in ((detector_weights, "detector"), (classifier_weights, "classifier")):
@@ -119,6 +121,7 @@ class RoadSignPipeline:
 
         self.device = resolve_device(device)
         self.det_conf, self.cnn_conf, self.imgsz = det_conf, cnn_conf, imgsz
+        self.merge_iou = merge_iou  # None/0 = keep every detector box (behaviour before 2026-11-23)
         self.detector = YOLO(str(detector_weights))
         self.detector_names = {int(k): v for k, v in self.detector.names.items()}
         unknown = set(self.detector_names.values()) - set(SUPER_CATEGORIES)
@@ -156,8 +159,12 @@ class RoadSignPipeline:
         boxes = det.boxes.xyxy.cpu().numpy().round().astype(int)
         det_confs = det.boxes.conf.cpu().numpy()
         det_cls = det.boxes.cls.cpu().numpy().astype(int)
+        # One sign can get two boxes of different families (e.g. "other" + "prohibitory"):
+        # keep only the most confident one (class-agnostic suppression).
+        order = merge_overlapping(boxes, det_confs, getattr(self, "merge_iou", None))
         crops, kept = [], []
-        for i, (x1, y1, x2, y2) in enumerate(boxes):
+        for i in order:
+            x1, y1, x2, y2 = boxes[i]
             try:
                 crops.append(crop_and_resize(image_bgr, (int(x1), int(y1), int(x2), int(y2))))
                 kept.append(i)
@@ -210,6 +217,40 @@ class RoadSignPipeline:
             cv2.rectangle(out, (lx, ly), (lx + lw, ly + lh), (30, 30, 30), -1)
             cv2.putText(out, d.label, (lx + 4, ly + th + 4), font, font_scale, color, 2, cv2.LINE_AA)
         return out
+
+
+def merge_overlapping(boxes, confidences, merge_iou: float | None = 0.6,
+                      containment: float = 0.85) -> list[int]:
+    """Indices of the boxes to keep, most confident first.
+
+    A box is dropped when a MORE confident box covers the same sign, whatever their
+    families: IoU above ``merge_iou``, or one box lying almost entirely inside the
+    other (intersection / smaller area above ``containment``). ``merge_iou`` None or
+    <= 0 keeps every box.
+    """
+    order = sorted(range(len(boxes)), key=lambda i: -float(confidences[i]))
+    if not merge_iou or merge_iou <= 0:
+        return order
+    kept: list[int] = []
+    for i in order:
+        a = tuple(float(v) for v in boxes[i])
+        duplicate = False
+        for j in kept:
+            b = tuple(float(v) for v in boxes[j])
+            if iou(a, b) > merge_iou or _containment(a, b) > containment:
+                duplicate = True
+                break
+        if not duplicate:
+            kept.append(i)
+    return kept
+
+
+def _containment(a, b) -> float:
+    """Intersection area / area of the smaller box (1.0 = one box is inside the other)."""
+    iw = max(0.0, min(a[2], b[2]) - max(a[0], b[0]))
+    ih = max(0.0, min(a[3], b[3]) - max(a[1], b[1]))
+    smaller = min((a[2] - a[0]) * (a[3] - a[1]), (b[2] - b[0]) * (b[3] - b[1]))
+    return (iw * ih) / smaller if smaller > 0 else 0.0
 
 
 def _overlaps(a: tuple[int, int, int, int], b: tuple[int, int, int, int]) -> bool:
