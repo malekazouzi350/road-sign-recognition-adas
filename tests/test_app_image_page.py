@@ -122,3 +122,21 @@ def test_upload_and_webcam_photo_use_the_same_analysis(monkeypatch):
     at.camera_input[0].upload("photo.jpg", buf.tobytes(), "image/jpeg").run()
     assert not at.exception, at.exception
     assert [h["type"] for h in at.session_state["history"]] == ["image", "webcam"]
+
+
+def test_webcam_closeup_mode_uses_the_cnn_only(monkeypatch):
+    class CloseupPipeline(FakePipeline):
+        def classify_closeup(self, image_bgr, top_k=3):
+            return [(14, "Stop", 0.93), (17, "No entry", 0.04), (13, "Yield", 0.01)]
+
+    monkeypatch.setattr(D, "missing_weights", lambda: [])
+    monkeypatch.setattr(D, "load_pipeline", lambda device: CloseupPipeline([]))
+    ok, buf = cv2.imencode(".jpg", np.full((200, 340, 3), 120, dtype=np.uint8))
+    at = st_testing.AppTest.from_file(str(APP_DIR / "app.py"), default_timeout=60)
+    at.run()
+    at.switch_page("pages/webcam_detection.py").run()
+    at.radio[0].set_value("Panneau en gros plan (CNN seul)").run()
+    at.camera_input[0].upload("photo.jpg", buf.tobytes(), "image/jpeg").run()
+    assert not at.exception, at.exception
+    assert any("Stop" in s.value for s in at.success)
+    assert at.session_state["history"][-1]["type"] == "webcam (gros plan)"

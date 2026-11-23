@@ -8,8 +8,13 @@ Only one frame out of ``every_n`` is analysed (the CPU is too slow for every fra
 the frames in between are written with the boxes of the last analysed frame, so the
 output video keeps the original length and speed.
 
+Frames wider than ``max_width`` (e.g. 4K) are reduced first: the detector works at
+``imgsz`` (1024 px) anyway, and writing a 4K video is very slow on a CPU.
+
 No temporal smoothing yet: each analysed frame is independent. The per-sign summary
-only counts in how many analysed frames each sign appeared.
+counts in how many analysed frames each sign appeared and how often the detector and
+the CNN disagreed on its family; a sign seen once, or with a disagreement, is marked
+"à vérifier".
 """
 
 from __future__ import annotations
@@ -46,6 +51,12 @@ class SignSeen:
     frames: int = 0             # number of ANALYSED frames where it appears
     first_time_s: float = 0.0
     best_cnn_conf: float = 0.0
+    disagreements: int = 0      # frames where the CNN class is not in the detector's family
+
+    @property
+    def reliable(self) -> bool:
+        """Seen on at least 2 analysed frames, and detector + CNN always agree."""
+        return self.frames >= 2 and self.disagreements == 0
 
 
 @dataclass
@@ -56,6 +67,7 @@ class VideoSummary:
     analysed_frames: int = 0
     written_frames: int = 0
     every_n: int = 1
+    output_size: tuple[int, int] = (0, 0)   # (w, h) after the optional reduction
     mean_ms_per_analysed_frame: float = 0.0
     signs: dict[str, SignSeen] = field(default_factory=dict)
 
@@ -69,6 +81,9 @@ class VideoSummary:
             "images analysées où il apparaît": s.frames,
             "première apparition (s)": round(s.first_time_s, 1),
             "meilleure confiance CNN": round(s.best_cnn_conf, 3),
+            "accord détecteur / CNN": ("—" if not s.recognised else
+                                       "oui" if s.disagreements == 0 else f"non ({s.disagreements} fois)"),
+            "fiabilité": "confirmé" if s.reliable else "à vérifier",
         } for s in ordered]
 
 
@@ -106,6 +121,7 @@ def process_video(
     every_n: int = 1,
     max_seconds: float | None = None,
     progress: Callable[[float], None] | None = None,
+    max_width: int | None = 1280,
 ) -> VideoSummary:
     """Analyse ``input_path``; write the annotated video next to ``output_path`` (extension chosen
     automatically, see VIDEO_FORMATS). ``output_path=None`` -> only the summary is computed."""
@@ -115,11 +131,15 @@ def process_video(
     if max_seconds is not None:
         last_frame = min(last_frame, int(max_seconds * info.fps)) if last_frame > 0 else int(max_seconds * info.fps)
 
+    size = output_size(info.width, info.height, max_width)
+    resize = size != (info.width, info.height)
+
     writer, out_path, playable = (None, None, False)
     if output_path is not None:
-        writer, out_path, playable = open_writer(Path(output_path), info.fps, (info.width, info.height))
+        writer, out_path, playable = open_writer(Path(output_path), info.fps, size)
 
-    summary = VideoSummary(info=info, output_path=out_path, playable_in_browser=playable, every_n=every_n)
+    summary = VideoSummary(info=info, output_path=out_path, playable_in_browser=playable, every_n=every_n,
+                           output_size=size)
     cap = cv2.VideoCapture(str(input_path))
     last_result, total_ms, index = None, 0.0, 0
     try:
@@ -127,6 +147,8 @@ def process_video(
             ok, frame = cap.read()
             if not ok:
                 break
+            if resize:
+                frame = cv2.resize(frame, size, interpolation=cv2.INTER_AREA)
             if index % every_n == 0:
                 last_result = pipeline.predict(frame)
                 total_ms += last_result.timings_ms.get("total", 0.0)
@@ -149,6 +171,14 @@ def process_video(
     return summary
 
 
+def output_size(width: int, height: int, max_width: int | None) -> tuple[int, int]:
+    """(w, h) after reducing to ``max_width`` (aspect ratio kept, even numbers for the codecs)."""
+    if not max_width or width <= max_width:
+        return width, height
+    scale = max_width / width
+    return max_width - max_width % 2, max(2, int(round(height * scale / 2)) * 2)
+
+
 def _update_signs(signs: dict[str, SignSeen], result, time_s: float) -> None:
     seen_here = set()
     for d in result.detections:
@@ -162,3 +192,5 @@ def _update_signs(signs: dict[str, SignSeen], result, time_s: float) -> None:
                                         recognised=d.recognised, first_time_s=time_s)
         s.frames += 1
         s.best_cnn_conf = max(s.best_cnn_conf, d.cnn_conf)
+        if d.recognised and not d.agrees_with_detector:
+            s.disagreements += 1

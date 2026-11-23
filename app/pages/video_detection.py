@@ -55,8 +55,12 @@ except ValueError:
              icon=":material/broken_image:")
     st.stop()
 
+from roadsigns.video import output_size  # noqa: E402
+
+reduced = output_size(info.width, info.height, 1280)
 st.caption(f"Vidéo : {info.width} × {info.height} px · {info.fps:.0f} images/s · "
-           f"{info.frame_count} images · {info.duration_s:.1f} s")
+           f"{info.frame_count} images · {info.duration_s:.1f} s"
+           + (f" · réduite à {reduced[0]} × {reduced[1]} px pour l'analyse" if reduced[0] != info.width else ""))
 
 # Options -----------------------------------------------------------------------------------------
 gpu = settings["device"] == "cuda" or (settings["device"] == "auto" and D.cuda_available())
@@ -120,8 +124,9 @@ if rows:
     st.subheader("Panneaux vus dans la vidéo")
     st.dataframe(rows, hide_index=True, width="stretch")
     st.caption("Chaque image analysée est traitée seule (pas encore de suivi d'une image à l'autre). "
-               "Un panneau vu sur une seule image peut être une fausse alarme ; un panneau vu sur "
-               "plusieurs images est beaucoup plus fiable.")
+               "« confirmé » : vu sur au moins 2 images analysées, et le détecteur et le CNN sont d'accord "
+               "sur la famille. « à vérifier » : vu une seule fois, ou désaccord détecteur / CNN "
+               "(le nom affiché vient du CNN) : regardez la vidéo à ce moment-là.")
 else:
     st.info("Aucun panneau détecté dans la partie analysée de la vidéo.", icon=":material/search_off:")
 

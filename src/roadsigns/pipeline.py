@@ -143,6 +143,23 @@ class RoadSignPipeline:
         conf, cls = prob.max(1)
         return cls.cpu().numpy(), conf.cpu().numpy()
 
+    def classify_closeup(self, image_bgr: np.ndarray, top_k: int = 3) -> list[tuple[int, str, float]]:
+        """CNN only, for a photo where ONE sign fills the centre (e.g. webcam close-up).
+
+        The detector is skipped: it was trained on small signs in road scenes and misses
+        signs that fill the image. The central square of the photo is given to the CNN.
+        Returns the ``top_k`` (class_id, class_name, probability), best first. The CNN always
+        answers among the 43 classes, so an unknown sign simply gets a low probability.
+        """
+        if image_bgr is None or image_bgr.ndim != 3 or image_bgr.shape[2] != 3:
+            raise ValueError("expected a colour image (H x W x 3, BGR)")
+        box = central_square(image_bgr.shape[1], image_bgr.shape[0])
+        x = preprocess_crop(crop_and_resize(image_bgr, box)).unsqueeze(0).to(self.device)
+        with torch.no_grad():
+            prob = torch.softmax(self.classifier(x), dim=1)[0].cpu().numpy()
+        best = prob.argsort()[::-1][:top_k]
+        return [(int(c), CLASS_NAMES[int(c)], float(prob[c])) for c in best]
+
     def predict(self, image_bgr: np.ndarray) -> PipelineResult:
         if image_bgr is None or image_bgr.ndim != 3 or image_bgr.shape[2] != 3:
             raise ValueError("expected a colour image (H x W x 3, BGR)")
@@ -250,3 +267,10 @@ def place_label(
             if not any(_overlaps(rect, o) for o in obstacles):
                 return lx, y
     return lx, clamp_y(y1 - lh - 2)  # crowded image: accept an overlap, but stay inside
+
+
+def central_square(width: int, height: int, fraction: float = 0.8) -> tuple[int, int, int, int]:
+    """Box (x1, y1, x2, y2) of the central square covering ``fraction`` of the shorter side."""
+    side = max(1, int(min(width, height) * fraction))
+    x1, y1 = (width - side) // 2, (height - side) // 2
+    return x1, y1, x1 + side, y1 + side

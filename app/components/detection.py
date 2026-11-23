@@ -135,3 +135,36 @@ def add_video_to_history(name: str, summary, device: str) -> None:
         "temps (ms)": round(summary.mean_ms_per_analysed_frame, 1),
         "calcul": device,
     })
+
+
+def classify_closeup(image_bgr: np.ndarray, settings: dict):
+    """CNN only on the central square. Returns (top3 [(id, name, p)], ms, device)."""
+    import time
+
+    pipe = configured_pipeline(settings)
+    t0 = time.perf_counter()
+    top = pipe.classify_closeup(image_bgr, top_k=3)
+    return top, (time.perf_counter() - t0) * 1000, pipe.device
+
+
+def draw_central_square(image_bgr: np.ndarray) -> np.ndarray:
+    from roadsigns.pipeline import central_square
+
+    out = image_bgr.copy()
+    x1, y1, x2, y2 = central_square(out.shape[1], out.shape[0])
+    cv2.rectangle(out, (x1, y1), (x2, y2), (80, 200, 60), max(2, out.shape[1] // 300))
+    return out
+
+
+def add_closeup_to_history(name: str, top, threshold: float, ms: float, device: str) -> None:
+    recognised = top[0][2] >= threshold
+    st.session_state.setdefault("history", []).append({
+        "heure": datetime.now().strftime("%H:%M:%S"),
+        "type": "webcam (gros plan)",
+        "fichier": name,
+        "panneaux": 1,
+        "reconnus": int(recognised),
+        "non reconnus (?)": int(not recognised),
+        "temps (ms)": round(ms, 1),
+        "calcul": device,
+    })
