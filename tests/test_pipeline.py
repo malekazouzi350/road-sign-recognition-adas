@@ -53,3 +53,31 @@ def test_predict_rejects_non_colour_image():
     pipe.detector = SimpleNamespace()
     with pytest.raises(ValueError):
         pipe.predict(np.zeros((10, 10), dtype=np.uint8))
+
+
+def test_label_stays_inside_image_at_the_right_border():
+    from roadsigns.pipeline import place_label
+    x, y = place_label((1330, 200, 1360, 260), (180, 24), (1360, 800), [])
+    assert 0 <= x and x + 180 <= 1360 and 0 <= y and y + 24 <= 800
+
+
+def test_label_goes_below_when_box_touches_the_top():
+    from roadsigns.pipeline import place_label
+    _, y = place_label((100, 0, 140, 40), (80, 24), (400, 300), [])
+    assert y >= 40
+
+
+def test_labels_do_not_overlap_for_neighbour_boxes():
+    from roadsigns.pipeline import _overlaps, place_label
+    placed = []
+    for box in [(900, 150, 1020, 250), (930, 250, 1010, 335), (1020, 230, 1075, 290)]:
+        x, y = place_label(box, (190, 24), (1360, 800), placed)
+        placed.append((x, y, x + 190, y + 24))
+    assert not any(_overlaps(a, b) for i, a in enumerate(placed) for b in placed[i + 1:])
+
+
+def test_label_avoids_other_boxes_when_there_is_room():
+    from roadsigns.pipeline import _overlaps, place_label
+    yield_box, arrow_box = (915, 150, 1022, 250), (930, 252, 1010, 335)
+    x, y = place_label(arrow_box, (190, 24), (1360, 800), [], [yield_box])
+    assert not _overlaps((x, y, x + 190, y + 24), yield_box)
