@@ -6,7 +6,7 @@ import streamlit as st
 
 from components.ui import page_header
 
-page_header("05", "À propos", "Détection et reconnaissance des panneaux de signalisation par IA",
+page_header("06", "À propos", "Détection et reconnaissance des panneaux de signalisation par IA",
             "Projet universitaire de vision par ordinateur pour l'aide à la conduite (ADAS).")
 
 left, right = st.columns(2, gap="large")

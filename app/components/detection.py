@@ -40,13 +40,28 @@ def current_settings() -> dict:
     return {key: get(key) for key in ("det_conf", "cnn_conf", "imgsz", "device")}
 
 
-def analyse(image_bgr: np.ndarray, settings: dict):
-    """Run the pipeline with the session settings. Returns (result, annotated_bgr)."""
+@st.cache_resource(show_spinner=False)
+def cuda_available() -> bool:
+    try:
+        import torch
+        return bool(torch.cuda.is_available())
+    except Exception:
+        return False
+
+
+def configured_pipeline(settings: dict):
+    """The shared pipeline, with the thresholds of this session."""
     pipe = load_pipeline(settings["device"])
     # The models are shared; only the thresholds change between runs.
     pipe.det_conf = float(settings["det_conf"])
     pipe.cnn_conf = float(settings["cnn_conf"])
     pipe.imgsz = int(settings["imgsz"])
+    return pipe
+
+
+def analyse(image_bgr: np.ndarray, settings: dict):
+    """Run the pipeline with the session settings. Returns (result, annotated_bgr, device)."""
+    pipe = configured_pipeline(settings)
     result = pipe.predict(image_bgr)
     return result, pipe.annotate(image_bgr, result), pipe.device
 
@@ -96,10 +111,27 @@ def add_to_history(name: str, result, device: str) -> None:
     recognised = sum(d.recognised for d in result.detections)
     st.session_state.setdefault("history", []).append({
         "heure": datetime.now().strftime("%H:%M:%S"),
-        "image": name,
+        "type": "image",
+        "fichier": name,
         "panneaux": len(result.detections),
         "reconnus": recognised,
         "non reconnus (?)": len(result.detections) - recognised,
         "temps (ms)": result.timings_ms.get("total"),
+        "calcul": device,
+    })
+
+
+def add_video_to_history(name: str, summary, device: str) -> None:
+    """Same table as for images: one line per analysed video (distinct signs, ms per analysed frame)."""
+    rows = summary.rows()
+    recognised = sum(r["reconnu"] == "oui" for r in rows)
+    st.session_state.setdefault("history", []).append({
+        "heure": datetime.now().strftime("%H:%M:%S"),
+        "type": "vidéo",
+        "fichier": name,
+        "panneaux": len(rows),
+        "reconnus": recognised,
+        "non reconnus (?)": len(rows) - recognised,
+        "temps (ms)": round(summary.mean_ms_per_analysed_frame, 1),
         "calcul": device,
     })
