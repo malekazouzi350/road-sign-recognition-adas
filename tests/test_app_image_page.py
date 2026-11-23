@@ -103,3 +103,22 @@ def test_decode_image_rejects_non_images():
     assert D.decode_image(b"not an image") is None
     ok, buf = cv2.imencode(".png", np.zeros((10, 10, 3), dtype=np.uint8))
     assert D.decode_image(buf.tobytes()).shape == (10, 10, 3)
+
+
+def test_upload_and_webcam_photo_use_the_same_analysis(monkeypatch):
+    monkeypatch.setattr(D, "missing_weights", lambda: [])
+    monkeypatch.setattr(D, "example_images", lambda: [])
+    monkeypatch.setattr(D, "load_pipeline", lambda device: FakePipeline([sign((20, 30, 60, 70))]))
+    ok, buf = cv2.imencode(".jpg", np.full((200, 340, 3), 120, dtype=np.uint8))
+    at = st_testing.AppTest.from_file(str(APP_DIR / "app.py"), default_timeout=60)
+    at.run()
+    at.switch_page("pages/image_detection.py").run()
+    at.file_uploader[0].upload("road.jpg", buf.tobytes(), "image/jpeg").run()
+    assert not at.exception
+    at.file_uploader[0].upload("bad.jpg", b"not an image", "image/jpeg").run()
+    assert any("n'est pas une image lisible" in e.value for e in at.error)
+
+    at.switch_page("pages/webcam_detection.py").run()
+    at.camera_input[0].upload("photo.jpg", buf.tobytes(), "image/jpeg").run()
+    assert not at.exception, at.exception
+    assert [h["type"] for h in at.session_state["history"]] == ["image", "webcam"]

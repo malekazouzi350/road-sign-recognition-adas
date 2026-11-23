@@ -57,5 +57,5 @@ if history:
     st.dataframe(list(reversed(history)), hide_index=True, width="stretch")
     st.caption("Ces analyses sont gardées tant que l'onglet du navigateur reste ouvert.")
 else:
-    st.info("Aucune analyse pour l'instant : utilisez les pages « Détection › Sur image » ou « Sur vidéo ».",
+    st.info("Aucune analyse pour l'instant : utilisez les pages « Détection » (image, vidéo ou webcam).",
             icon=":material/schedule:")

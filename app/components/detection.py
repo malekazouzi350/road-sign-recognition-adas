@@ -106,12 +106,12 @@ def to_png(image_bgr: np.ndarray) -> bytes:
     return buf.tobytes() if ok else b""
 
 
-def add_to_history(name: str, result, device: str) -> None:
+def add_to_history(name: str, result, device: str, kind: str = "image") -> None:
     """Remember the analyses of this session (shown on the dashboard)."""
     recognised = sum(d.recognised for d in result.detections)
     st.session_state.setdefault("history", []).append({
         "heure": datetime.now().strftime("%H:%M:%S"),
-        "type": "image",
+        "type": kind,
         "fichier": name,
         "panneaux": len(result.detections),
         "reconnus": recognised,

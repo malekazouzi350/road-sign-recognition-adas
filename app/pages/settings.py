@@ -7,8 +7,8 @@ import streamlit as st
 from components.settings import DEFAULTS, get
 from components.ui import page_header
 
-page_header("05", "Paramètres", "Réglages de la détection",
-            "Utilisés par la détection sur image et sur vidéo (et plus tard par la webcam).")
+page_header("06", "Paramètres", "Réglages de la détection",
+            "Utilisés par la détection sur image, sur vidéo et par webcam.")
 
 st.session_state["det_conf"] = st.slider(
     "Seuil de confiance du détecteur", 0.05, 0.95, float(get("det_conf")), 0.05,
