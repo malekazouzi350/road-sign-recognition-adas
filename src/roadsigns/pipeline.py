@@ -184,16 +184,69 @@ class RoadSignPipeline:
 
     @staticmethod
     def annotate(image_bgr: np.ndarray, result: PipelineResult) -> np.ndarray:
-        """Draw boxes and readable labels (dark background behind the text)."""
+        """Draw boxes and readable labels (dark background behind the text).
+
+        Labels always stay inside the image, never cover each other and, when there is
+        room, do not cover the other boxes either (see ``place_label``).
+        """
         out = image_bgr.copy()
-        scale = max(0.5, min(1.0, out.shape[1] / 1600))
+        h, w = out.shape[:2]
+        scale = max(0.5, min(1.0, w / 1600))
+        font, font_scale = cv2.FONT_HERSHEY_SIMPLEX, 0.6 * scale
+        # Boxes first, so that no box line is drawn over a label.
         for d in result.detections:
             color = SUPER_COLORS_BGR.get(d.super_category, (200, 200, 200))
             x1, y1, x2, y2 = d.box
             cv2.rectangle(out, (x1, y1), (x2, y2), color, max(2, int(3 * scale)))
-            text = d.label
-            (tw, th), base = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.6 * scale, 2)
-            ty = y1 - 6 if y1 - th - 10 > 0 else y2 + th + 10
-            cv2.rectangle(out, (x1, ty - th - 6), (x1 + tw + 8, ty + base), (30, 30, 30), -1)
-            cv2.putText(out, text, (x1 + 4, ty - 2), cv2.FONT_HERSHEY_SIMPLEX, 0.6 * scale, color, 2, cv2.LINE_AA)
+        placed: list[tuple[int, int, int, int]] = []
+        all_boxes = [d.box for d in result.detections]
+        for d in result.detections:
+            color = SUPER_COLORS_BGR.get(d.super_category, (200, 200, 200))
+            (tw, th), base = cv2.getTextSize(d.label, font, font_scale, 2)
+            lw, lh = tw + 8, th + base + 8
+            others = [b for b in all_boxes if b is not d.box]
+            lx, ly = place_label(d.box, (lw, lh), (w, h), placed, others)
+            placed.append((lx, ly, lx + lw, ly + lh))
+            cv2.rectangle(out, (lx, ly), (lx + lw, ly + lh), (30, 30, 30), -1)
+            cv2.putText(out, d.label, (lx + 4, ly + th + 4), font, font_scale, color, 2, cv2.LINE_AA)
         return out
+
+
+def _overlaps(a: tuple[int, int, int, int], b: tuple[int, int, int, int]) -> bool:
+    return a[0] < b[2] and b[0] < a[2] and a[1] < b[3] and b[1] < a[3]
+
+
+def place_label(
+    box: tuple[int, int, int, int],
+    label_size: tuple[int, int],
+    image_size: tuple[int, int],
+    placed: list[tuple[int, int, int, int]],
+    other_boxes: list[tuple[int, int, int, int]] = (),
+) -> tuple[int, int]:
+    """Top-left corner for a label of ``label_size`` (w, h) next to ``box``.
+
+    Rules: the label is kept fully inside the image (clamped at the borders); it goes
+    above the box if possible, else below; if that spot covers an already placed
+    label (or, when possible, another sign's box), it is moved further up / down.
+    """
+    x1, y1, x2, y2 = box
+    lw, lh = label_size
+    w, h = image_size
+    lx = min(max(0, x1), max(0, w - lw))
+
+    def clamp_y(y: int) -> int:
+        return min(max(0, y), max(0, h - lh))
+
+    candidates = []
+    for step in range(8):
+        candidates.append(y1 - lh - 2 - step * (lh + 2))   # above, then further up
+        candidates.append(y2 + 2 + step * (lh + 2))        # below, then further down
+    # First try a spot that hides neither labels nor boxes, then one that hides no label.
+    for obstacles in (list(placed) + list(other_boxes), list(placed)):
+        for y in candidates:
+            if y < 0 or y + lh > h:
+                continue
+            rect = (lx, y, lx + lw, y + lh)
+            if not any(_overlaps(rect, o) for o in obstacles):
+                return lx, y
+    return lx, clamp_y(y1 - lh - 2)  # crowded image: accept an overlap, but stay inside

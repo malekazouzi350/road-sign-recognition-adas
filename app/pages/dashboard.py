@@ -52,5 +52,10 @@ with right:
         st.caption("Voir data/README.md pour télécharger les données, puis python scripts/prepare_gtsdb.py.")
 
 st.subheader("Analyses de cette session")
-st.info("Aucune image analysée pour l'instant : la page de détection sera ajoutée avec le pipeline "
-        "détecteur + CNN.", icon=":material/schedule:")
+history = st.session_state.get("history", [])
+if history:
+    st.dataframe(list(reversed(history)), hide_index=True, width="stretch")
+    st.caption("Ces analyses sont gardées tant que l'onglet du navigateur reste ouvert.")
+else:
+    st.info("Aucune image analysée pour l'instant : utilisez la page « Détection › Sur image ».",
+            icon=":material/schedule:")

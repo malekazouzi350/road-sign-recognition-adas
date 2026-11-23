@@ -3,8 +3,8 @@
 Run from the repository root (venv active):
     streamlit run app/app.py
 
-Pages are added only when they actually work. Image, video and webcam detection
-will appear once the detector + CNN pipeline (src/roadsigns/pipeline.py) exists.
+Pages are added only when they actually work. Image detection uses the detector + CNN
+pipeline (src/roadsigns/pipeline.py); video and webcam pages will follow.
 """
 
 from __future__ import annotations
@@ -31,6 +31,9 @@ with st.sidebar:
 pages = {
     "Projet": [
         st.Page("pages/dashboard.py", title="Tableau de bord", icon=":material/dashboard:", default=True),
+    ],
+    "Détection": [
+        st.Page("pages/image_detection.py", title="Sur image", icon=":material/image_search:"),
     ],
     "Modèles": [
         st.Page("pages/evaluation.py", title="Évaluation", icon=":material/insights:"),
