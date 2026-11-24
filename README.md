@@ -34,7 +34,7 @@ l'entraînement.
 | Notre CNN sur GTSRB (5 850 images de test) | accuracy, 43 classes | 99,69 % | `results/classifier/` |
 | Notre CNN sur les panneaux découpés de GTSDB | accuracy | 99,59 % | `results/classifier_on_gtsdb/` |
 | Détecteur v1 (1024 px) | rappel / mAP50 | 95,3 % / 97,7 % | `results/detector/v1_quick/` |
-| Détecteur v2 (1280 px) | rappel / mAP50 | 97,4 % / 98,9 % | `results/detector/v2_1280/` (PR de Tasbih en cours) |
+| Détecteur v2 (1280 px) | rappel / mAP50 | 97,4 % / 98,9 % | `results/detector/v2_1280/` |
 | Système complet avec détecteur v1 | panneaux trouvés **et** bien nommés | 98,3 % (355/361), 21 fausses alarmes | historique Git de `results/pipeline/` |
 | **Système complet** (détecteur v2 + CNN) | panneaux trouvés **et** bien nommés | **98,9 %** (357/361) | `results/pipeline/` |
 | Système complet (v2) | mauvais noms | **0** | `results/pipeline/` |
@@ -102,7 +102,7 @@ Le navigateur s'ouvre sur `http://localhost:8501`.
 |---|---|
 | Tableau de bord | résultats mesurés, modèles et données présents sur l'ordinateur, analyses de la session |
 | Détection › Sur image | importer une photo ou choisir une image de test GTSDB ; image annotée, panneaux découpés, tableau, téléchargements |
-| Détection › Sur vidéo | vidéo annotée, une image analysée sur N, liste des panneaux vus avec une colonne de fiabilité |
+| Détection › Sur vidéo | vidéo annotée, une image analysée sur N, suivi de chaque panneau (nom décidé par vote, numéro affiché), liste des panneaux avec une colonne de fiabilité |
 | Détection › Webcam | photo avec la caméra : mode « scène de route » (détecteur + CNN) ou « panneau en gros plan » (CNN seul) |
 | Évaluation | toutes les mesures et courbes de `results/` |
 | Paramètres | seuils du détecteur et du CNN, taille d'image, CPU ou GPU |
@@ -145,8 +145,9 @@ models/              poids (en local, hors Git)
 - Le détecteur a appris des panneaux **petits** dans des scènes de route (médiane 39 px). Il ne
   trouve pas un panneau qui remplit toute l'image : c'est le rôle du mode « gros plan » de la page
   webcam.
-- En vidéo, chaque image est analysée seule : il n'y a pas encore de suivi d'un panneau d'une image
-  à l'autre.
+- En vidéo, le suivi d'un panneau d'une image à l'autre se fait seulement par la position des boîtes.
+  Un panneau caché un moment peut recevoir deux numéros. Faute de vidéos annotées, ce suivi est
+  vérifié par des tests et à l'œil, pas mesuré.
 - Pas encore de mesure en conditions difficiles (nuit, contre-jour, flou).
 
 ## Équipe

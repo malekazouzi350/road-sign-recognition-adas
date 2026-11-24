@@ -11,19 +11,26 @@ output video keeps the original length and speed.
 Frames wider than ``max_width`` (e.g. 4K) are reduced first: the detector works at
 ``imgsz`` (1024 px) anyway, and writing a 4K video is very slow on a CPU.
 
-No temporal smoothing yet: each analysed frame is independent. The per-sign summary
-counts in how many analysed frames each sign appeared and how often the detector and
-the CNN disagreed on its family; a sign seen once, or with a disagreement, is marked
-"à vérifier".
+With ``track=True`` (default) each sign is followed from one analysed frame to the next
+(roadsigns.tracking): its name is decided by a vote over all its frames, the video shows
+that stable name with the track number, and the summary has one row per physical sign.
+With ``track=False`` each analysed frame is judged alone and the summary has one row per
+name. In both cases a sign seen once, or with a detector/CNN disagreement, is marked
+"à vérifier" (with tracking: also when the CNN changed its mind too often).
 """
 
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 import cv2
+
+from roadsigns.pipeline import SignDetection
+from roadsigns.tracking import SignTracker, Track
+
+MIN_VOTE_SHARE = 0.7  # with tracking: below this, the CNN changed its mind too often -> "à vérifier"
 
 # (fourcc, extension): WebM/VP8 plays in every browser; MP4/mp4v is a fallback for download only.
 VIDEO_FORMATS = (("VP80", ".webm"), ("mp4v", ".mp4"))
@@ -52,11 +59,16 @@ class SignSeen:
     first_time_s: float = 0.0
     best_cnn_conf: float = 0.0
     disagreements: int = 0      # frames where the CNN class is not in the detector's family
+    track_id: int | None = None         # set when tracking is on
+    last_time_s: float | None = None
+    vote_share: float | None = None     # with tracking: part of the CNN votes for the chosen name
 
     @property
     def reliable(self) -> bool:
-        """Seen on at least 2 analysed frames, and detector + CNN always agree."""
-        return self.frames >= 2 and self.disagreements == 0
+        """Seen on at least 2 analysed frames, detector + CNN always agree, and (with tracking)
+        the CNN mostly gave the same name."""
+        consistent = self.vote_share is None or not self.recognised or self.vote_share >= MIN_VOTE_SHARE
+        return self.frames >= 2 and self.disagreements == 0 and consistent
 
 
 @dataclass
@@ -69,12 +81,14 @@ class VideoSummary:
     every_n: int = 1
     output_size: tuple[int, int] = (0, 0)   # (w, h) after the optional reduction
     mean_ms_per_analysed_frame: float = 0.0
+    tracking: bool = False
     signs: dict[str, SignSeen] = field(default_factory=dict)
 
     def rows(self) -> list[dict]:
-        """One row per sign, most frequent first (for a table / CSV)."""
+        """One row per sign (per physical sign with tracking), most frequent first (table / CSV)."""
         ordered = sorted(self.signs.values(), key=lambda s: (-s.frames, s.first_time_s))
         return [{
+            **({"suivi n°": s.track_id} if self.tracking else {}),
             "panneau": s.label,
             "super-catégorie": s.super_category,
             "reconnu": "oui" if s.recognised else "non (?)",
@@ -83,6 +97,8 @@ class VideoSummary:
             "meilleure confiance CNN": round(s.best_cnn_conf, 3),
             "accord détecteur / CNN": ("—" if not s.recognised else
                                        "oui" if s.disagreements == 0 else f"non ({s.disagreements} fois)"),
+            **({"dernière apparition (s)": round(s.last_time_s, 1),
+                "vote CNN": "—" if not s.recognised else f"{s.vote_share:.0%}"} if self.tracking else {}),
             "fiabilité": "confirmé" if s.reliable else "à vérifier",
         } for s in ordered]
 
@@ -122,9 +138,11 @@ def process_video(
     max_seconds: float | None = None,
     progress: Callable[[float], None] | None = None,
     max_width: int | None = 1280,
+    track: bool = True,
 ) -> VideoSummary:
     """Analyse ``input_path``; write the annotated video next to ``output_path`` (extension chosen
-    automatically, see VIDEO_FORMATS). ``output_path=None`` -> only the summary is computed."""
+    automatically, see VIDEO_FORMATS). ``output_path=None`` -> only the summary is computed.
+    ``track`` -> follow each sign across frames (see module docstring)."""
     every_n = max(1, int(every_n))
     info = read_info(input_path)
     last_frame = info.frame_count
@@ -139,7 +157,8 @@ def process_video(
         writer, out_path, playable = open_writer(Path(output_path), info.fps, size)
 
     summary = VideoSummary(info=info, output_path=out_path, playable_in_browser=playable, every_n=every_n,
-                           output_size=size)
+                           output_size=size, tracking=track)
+    tracker = SignTracker() if track else None
     cap = cv2.VideoCapture(str(input_path))
     last_result, total_ms, index = None, 0.0, 0
     try:
@@ -153,7 +172,12 @@ def process_video(
                 last_result = pipeline.predict(frame)
                 total_ms += last_result.timings_ms.get("total", 0.0)
                 summary.analysed_frames += 1
-                _update_signs(summary.signs, last_result, index / info.fps)
+                if tracker is not None:
+                    tracks = tracker.update(last_result.detections, index / info.fps)
+                    last_result = replace(last_result, detections=[
+                        _with_track_label(d, t) for d, t in zip(last_result.detections, tracks)])
+                else:
+                    _update_signs(summary.signs, last_result, index / info.fps)
             if writer is not None:
                 writer.write(pipeline.annotate(frame, last_result) if last_result else frame)
                 summary.written_frames += 1
@@ -164,6 +188,8 @@ def process_video(
         cap.release()
         if writer is not None:
             writer.release()
+    if tracker is not None:
+        summary.signs = {f"#{t.track_id}": _seen_from_track(t) for t in tracker.all_tracks()}
     if summary.analysed_frames:
         summary.mean_ms_per_analysed_frame = total_ms / summary.analysed_frames
     if progress is not None:
@@ -194,3 +220,31 @@ def _update_signs(signs: dict[str, SignSeen], result, time_s: float) -> None:
         s.best_cnn_conf = max(s.best_cnn_conf, d.cnn_conf)
         if d.recognised and not d.agrees_with_detector:
             s.disagreements += 1
+
+
+@dataclass
+class TrackedDetection(SignDetection):
+    """A detection drawn with its track: voted name (or family + "?") and track number."""
+
+    track_label: str = ""
+
+    @property
+    def label(self) -> str:
+        return self.track_label
+
+
+def _with_track_label(d, track: Track) -> TrackedDetection:
+    """The detection as drawn in the video: the track's voted name and its number."""
+    text = (f"#{track.track_id} {track.name} ({d.cnn_conf:.2f})" if track.name
+            else f"#{track.track_id} {track.family} (?)")
+    fields = {k: getattr(d, k) for k in SignDetection.__dataclass_fields__}
+    fields.update(super_category=track.family, recognised=track.name is not None,
+                  class_name=track.name or d.class_name)
+    return TrackedDetection(**fields, track_label=text)
+
+
+def _seen_from_track(t: Track) -> SignSeen:
+    return SignSeen(label=t.label, super_category=t.family, recognised=t.name is not None,
+                    frames=t.hits, first_time_s=t.first_time_s, best_cnn_conf=t.best_cnn_conf,
+                    disagreements=t.disagreements, track_id=t.track_id, last_time_s=t.last_time_s,
+                    vote_share=t.vote_share if t.name else None)
