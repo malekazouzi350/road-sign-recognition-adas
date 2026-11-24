@@ -125,3 +125,28 @@ def test_disagreement_and_single_frame_signs_are_marked_to_check(video):
     assert rows["Priority road"]["fiabilité"] == "à vérifier"
     assert rows["Priority road"]["accord détecteur / CNN"] == "non (1 fois)"
     assert rows["danger (?)"]["accord détecteur / CNN"] == "—"
+
+
+def test_tracking_gives_one_row_per_physical_sign_with_a_voted_name(video):
+    class Flicker(FakePipeline):
+        def predict(self, frame):
+            result = super().predict(frame)
+            if self.calls == 2:  # the CNN hesitates once on the same Stop sign
+                d = result.detections[0]
+                result.detections[0] = SignDetection(d.box, d.det_conf, d.super_category, 13, "Yield",
+                                                     0.7, 13, True, True)
+            return result
+
+    summary = process_video(Flicker(), video, None, every_n=3, track=True)
+    rows = summary.rows()
+    stop = [r for r in rows if r["panneau"] == "Stop"]
+    assert len(stop) == 1 and stop[0]["suivi n°"] >= 1
+    assert stop[0]["images analysées où il apparaît"] == 10       # the "Yield" frame is part of the Stop track
+    assert not any(r["panneau"] == "Yield" for r in rows)
+    assert stop[0]["vote CNN"] == "93%"                            # 9 x 0.99 vs 1 x 0.7
+    assert stop[0]["fiabilité"] == "confirmé"
+
+
+def test_without_tracking_the_old_per_name_summary_is_kept(video):
+    summary = process_video(FakePipeline(), video, None, every_n=3, track=False)
+    assert "suivi n°" not in summary.rows()[0]

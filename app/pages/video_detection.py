@@ -46,7 +46,7 @@ input_path = workdir / f"{digest}{Path(uploaded.name).suffix.lower()}"
 if not input_path.exists():
     input_path.write_bytes(data)
 
-from roadsigns.video import process_video, read_info  # noqa: E402  (after the weights check)
+from roadsigns.video import MIN_VOTE_SHARE, process_video, read_info  # noqa: E402  (after the weights check)
 
 try:
     info = read_info(input_path)
@@ -72,10 +72,14 @@ with c1:
 with c2:
     max_seconds = st.slider("Durée maximale analysée (s)", 5, 120, min(30, max(5, int(info.duration_s) or 5)), 5)
 
+track = st.toggle("Suivre chaque panneau d'une image à l'autre (recommandé)", value=True,
+                  help="Le nom de chaque panneau est décidé par un vote sur toutes ses images, "
+                       "et le tableau compte les panneaux réels au lieu des noms.")
+
 n_frames = min(info.frame_count, int(max_seconds * info.fps)) if info.frame_count else int(max_seconds * info.fps)
 st.caption(f"{n_frames} images lues, dont environ {-(-n_frames // every_n)} analysées par les modèles.")
 
-key = (f"{digest}|{every_n}|{max_seconds}|{settings['det_conf']}|{settings['cnn_conf']}|"
+key = (f"{digest}|{every_n}|{max_seconds}|{track}|{settings['det_conf']}|{settings['cnn_conf']}|"
        f"{settings['imgsz']}|{settings['device']}")
 cached = st.session_state.get("video_analysis")
 
@@ -84,7 +88,7 @@ if st.button("Lancer l'analyse", type="primary", icon=":material/play_arrow:"):
     try:
         pipe = D.configured_pipeline(settings)
         summary = process_video(pipe, input_path, workdir / f"{digest}_annotated", every_n=every_n,
-                                max_seconds=max_seconds,
+                                max_seconds=max_seconds, track=track,
                                 progress=lambda f: bar.progress(f, text=f"Analyse de la vidéo… {f:.0%}"))
     except Exception as exc:  # shown to the user instead of a Python traceback
         bar.empty()
@@ -105,8 +109,10 @@ named = [r for r in rows if r["reconnu"] == "oui"]
 ms = summary.mean_ms_per_analysed_frame
 kpi_row([
     kpi(str(summary.analysed_frames), "Images analysées", f"une sur {summary.every_n}", "teal"),
-    kpi(str(len(named)), "Panneaux différents reconnus", "sur toute la vidéo", "green"),
-    kpi(str(len(rows) - len(named)), "Familles non reconnues (?)", "confiance CNN trop faible",
+    kpi(str(len(named)), "Panneaux suivis reconnus" if summary.tracking else "Panneaux différents reconnus",
+        f"dont {sum(r['fiabilité'] == 'confirmé' for r in named)} confirmés", "green"),
+    kpi(str(len(rows) - len(named)), "Non reconnus (?)" if summary.tracking else "Familles non reconnues (?)",
+        "confiance CNN trop faible",
         "coral" if len(rows) > len(named) else "grey"),
     kpi(f"{ms:.0f} ms".replace(".", ","), "Par image analysée",
         f"≈ {1000 / ms:.1f} images/s · {cached['device']}".replace(".", ",") if ms else cached["device"], "teal"),
@@ -123,10 +129,17 @@ if video_path and video_path.exists():
 if rows:
     st.subheader("Panneaux vus dans la vidéo")
     st.dataframe(rows, hide_index=True, width="stretch")
-    st.caption("Chaque image analysée est traitée seule (pas encore de suivi d'une image à l'autre). "
-               "« confirmé » : vu sur au moins 2 images analysées, et le détecteur et le CNN sont d'accord "
-               "sur la famille. « à vérifier » : vu une seule fois, ou désaccord détecteur / CNN "
-               "(le nom affiché vient du CNN) : regardez la vidéo à ce moment-là.")
+    if summary.tracking:
+        st.caption("Une ligne par panneau suivi (son numéro est affiché dans la vidéo). Le nom est celui que "
+                   "le CNN a donné le plus souvent ; « vote CNN » indique à quel point il était constant. "
+                   "« confirmé » : vu sur au moins 2 images analysées, détecteur et CNN d'accord sur la "
+                   f"famille, et vote CNN d'au moins {MIN_VOTE_SHARE:.0%}. Sinon « à vérifier » : regardez "
+                   "la vidéo à ce moment-là. Un même panneau caché un moment peut recevoir deux numéros.")
+    else:
+        st.caption("Chaque image analysée est traitée seule (sans suivi). « confirmé » : vu sur au moins "
+                   "2 images analysées, et le détecteur et le CNN sont d'accord sur la famille. "
+                   "« à vérifier » : vu une seule fois, ou désaccord détecteur / CNN "
+                   "(le nom affiché vient du CNN) : regardez la vidéo à ce moment-là.")
 else:
     st.info("Aucun panneau détecté dans la partie analysée de la vidéo.", icon=":material/search_off:")
 
