@@ -33,7 +33,7 @@ from roadsigns.datasets.gtsdb import CLASS_NAMES, NUM_CLASSES, SUPER_CATEGORIES,
 from roadsigns.evaluation.matching import iou
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_DETECTOR = REPO_ROOT / "models" / "weights" / "detector_v1_quick.pt"
+DEFAULT_DETECTOR = REPO_ROOT / "models" / "weights" / "detector_v2_1280.pt"  # v2: trained at 1280 px
 DEFAULT_CLASSIFIER = REPO_ROOT / "models" / "weights" / "classifier_best.pt"
 
 # BGR colours per super-category (same palette as the slides and the app).
@@ -109,7 +109,7 @@ class RoadSignPipeline:
         device: str = "auto",
         det_conf: float = 0.25,
         cnn_conf: float = 0.60,
-        imgsz: int = 1024,
+        imgsz: int = 1280,
         merge_iou: float | None = 0.6,
     ) -> None:
         detector_weights, classifier_weights = Path(detector_weights), Path(classifier_weights)

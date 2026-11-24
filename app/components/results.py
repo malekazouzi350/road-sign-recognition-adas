@@ -16,7 +16,7 @@ RESULTS = REPO_ROOT / "results"
 WEIGHTS = REPO_ROOT / "models" / "weights"
 DATA_RAW = REPO_ROOT / "data" / "raw"
 
-DETECTOR_RUN = "v1_quick"
+DETECTOR_RUN = "v2_1280"
 
 # Where each result lives, and the command that creates it.
 SOURCES = {

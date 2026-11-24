@@ -1,8 +1,8 @@
 {
   "description": "Complete pipeline (team detector + team CNN) on the official GTSDB test images.",
   "trained_by_team": true,
-  "date_utc": "2026-11-23T17:37:36+00:00",
-  "detector": "detector_v1_quick.pt",
+  "date_utc": "2026-11-24T16:21:18+00:00",
+  "detector": "detector_v2_1280.pt",
   "classifier": "classifier_best.pt",
   "device": "cuda",
   "images": 300,
@@ -11,71 +11,71 @@
   "iou": 0.5,
   "merge_iou": 0.6,
   "ground_truth_signs": 361,
-  "predicted_boxes": 376,
+  "predicted_boxes": 383,
   "detection": {
-    "found": 355,
-    "missed": 6,
-    "false_alarms": 21,
-    "recall": 0.9834,
-    "precision": 0.9441
+    "found": 358,
+    "missed": 3,
+    "false_alarms": 25,
+    "recall": 0.9917,
+    "precision": 0.9347
   },
   "recognition_of_found_signs": {
-    "correct": 355,
+    "correct": 357,
     "wrong": 0,
-    "fallback": 0
+    "fallback": 1
   },
   "end_to_end": {
-    "recall": 0.9834,
+    "recall": 0.9889,
     "precision_of_named": 1.0,
     "wrong_name_rate": 0.0
   },
   "end_to_end_recall_by_size": {
-    "< 32 px": 0.9381,
-    "32-48 px": 1.0,
+    "< 32 px": 0.9691,
+    "32-48 px": 0.9931,
     ">= 48 px": 1.0
   },
   "missed_by_size": {
-    "< 32 px": "6/97",
+    "< 32 px": "3/97",
     "32-48 px": "0/145",
     ">= 48 px": "0/119"
   },
   "cnn_threshold_sweep": {
     "0.0": {
-      "correct": 355,
+      "correct": 358,
       "wrong": 0,
       "fallback": 0
     },
     "0.3": {
-      "correct": 355,
+      "correct": 358,
       "wrong": 0,
       "fallback": 0
     },
     "0.5": {
-      "correct": 355,
+      "correct": 358,
       "wrong": 0,
       "fallback": 0
     },
     "0.6": {
-      "correct": 355,
+      "correct": 357,
       "wrong": 0,
-      "fallback": 0
+      "fallback": 1
     },
     "0.7": {
-      "correct": 354,
+      "correct": 357,
       "wrong": 0,
       "fallback": 1
     },
     "0.8": {
-      "correct": 352,
+      "correct": 356,
       "wrong": 0,
-      "fallback": 3
+      "fallback": 2
     },
     "0.9": {
-      "correct": 348,
+      "correct": 353,
       "wrong": 0,
-      "fallback": 7
+      "fallback": 5
     }
   },
-  "median_ms_per_image": 33.5,
+  "median_ms_per_image": 24.7,
   "wrong_name_examples": []
 }
