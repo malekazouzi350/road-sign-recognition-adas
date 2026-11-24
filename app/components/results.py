@@ -17,12 +17,15 @@ WEIGHTS = REPO_ROOT / "models" / "weights"
 DATA_RAW = REPO_ROOT / "data" / "raw"
 
 DETECTOR_RUN = "v2_1280"
+CLASSIFIER_FILE = "classifier_blur.pt"   # CNN v2, trained with motion-blur augmentation
 
 # Where each result lives, and the command that creates it.
 SOURCES = {
     "baseline": (RESULTS / "baseline", "python scripts/baseline_pretrained.py"),
     "detector": (RESULTS / "detector" / DETECTOR_RUN, f"python scripts/train_detector.py --name {DETECTOR_RUN}"),
-    "classifier": (RESULTS / "classifier", "python scripts/train_classifier.py"),
+    "classifier": (RESULTS / "classifier_blur",
+                   "python scripts/train_classifier.py --motion-blur --weights-out models/weights/classifier_blur.pt "
+                   "--out results/classifier_blur"),
     "classifier_on_gtsdb": (RESULTS / "classifier_on_gtsdb", "python scripts/evaluate_classifier_gtsdb.py"),
     "dataset": (RESULTS / "dataset" / "super", "python scripts/prepare_gtsdb.py"),
     "exploration": (RESULTS / "exploration", "notebooks/01_gtsdb_exploration.ipynb (Run All)"),
@@ -62,7 +65,7 @@ def weights_status() -> dict[str, Path | None]:
     """Which trained models are present on this computer (weights are not in Git)."""
     files = {
         "detector": WEIGHTS / f"detector_{DETECTOR_RUN}.pt",
-        "classifier": WEIGHTS / "classifier_best.pt",
+        "classifier": WEIGHTS / CLASSIFIER_FILE,
     }
     return {name: (p if p.is_file() else None) for name, p in files.items()}
 

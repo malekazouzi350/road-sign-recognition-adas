@@ -15,6 +15,8 @@ Outputs:
 Usage (repository root, venv active):
     python scripts/train_classifier.py                  # GPU if available
     python scripts/train_classifier.py --epochs 3       # quick check
+    # classifier v2: same training + motion-blur augmentation, saved under another name
+    python scripts/train_classifier.py --motion-blur --weights-out models/weights/classifier_blur.pt --out results/classifier_blur
 """
 
 from __future__ import annotations
@@ -62,6 +64,8 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--out", type=Path, default=REPO_ROOT / "results/classifier")
     p.add_argument("--weights-out", type=Path, default=REPO_ROOT / "models/weights/classifier_best.pt")
+    p.add_argument("--motion-blur", action="store_true",
+                   help="add random motion blur to the training crops (robust to camera / car motion)")
     return p.parse_args()
 
 
@@ -191,7 +195,8 @@ def main() -> int:
 
     pin = device.type == "cuda"
     loaders = {
-        "train": DataLoader(SignCropDataset(images[idx["train"]], labels[idx["train"]], augment=True),
+        "train": DataLoader(SignCropDataset(images[idx["train"]], labels[idx["train"]], augment=True,
+                                            motion_blur=args.motion_blur),
                             batch_size=args.batch_size, shuffle=True, num_workers=args.workers, pin_memory=pin),
         "val": DataLoader(SignCropDataset(images[idx["val"]], labels[idx["val"]]),
                           batch_size=256, num_workers=args.workers, pin_memory=pin),
@@ -256,6 +261,7 @@ def main() -> int:
         "parameters": count_parameters(model),
         "split": "by track, 70/15/15 per class, seed %d" % args.seed,
         "images": {k: int(len(v)) for k, v in idx.items()},
+        "motion_blur_augmentation": bool(args.motion_blur),
         "epochs": args.epochs, "best_epoch": best_epoch, "best_val_acc": round(best_val, 4),
         "test_accuracy": round(test_acc, 4), "test_macro_f1": round(macro_f1, 4),
         "test_errors": int((y != pred).sum()),

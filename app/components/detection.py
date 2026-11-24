@@ -24,7 +24,7 @@ FIRST_TEST_IMAGE = 600  # images 00600-00899 = official GTSDB test set (never us
 def missing_weights() -> list[str]:
     """Names of the weight files missing on this computer (empty list = ready)."""
     status = R.weights_status()
-    files = {"detector": f"detector_{R.DETECTOR_RUN}.pt", "classifier": "classifier_best.pt"}
+    files = {"detector": f"detector_{R.DETECTOR_RUN}.pt", "classifier": R.CLASSIFIER_FILE}
     return [f"models/weights/{files[k]}" for k, path in status.items() if path is None]
 
 

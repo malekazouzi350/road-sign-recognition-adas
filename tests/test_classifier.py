@@ -62,3 +62,31 @@ def test_dataset_returns_normalised_tensors():
     ds = SignCropDataset(imgs, np.arange(4), augment=True)
     x, y = ds[2]
     assert x.shape == (3, INPUT_SIZE, INPUT_SIZE) and x.dtype == torch.float32 and y == 2
+
+
+def test_motion_blur_kernel_is_normalised_and_horizontal():
+    from roadsigns.classification.data import motion_blur_kernel
+    k = motion_blur_kernel(7, 0)
+    assert k.shape == (7, 7) and abs(k.sum() - 1) < 1e-5
+    assert k[3].sum() > 0.99  # all the weight on the middle row
+    assert abs(motion_blur_kernel(7, 20).sum() - 1) < 1e-5
+
+
+def test_random_motion_blur_keeps_type_and_blurs():
+    import numpy as np
+    import torch
+    from roadsigns.classification.data import RandomMotionBlur
+    t = torch.from_numpy(np.random.default_rng(0).integers(0, 255, (3, 48, 48), dtype=np.uint8))
+    out = RandomMotionBlur(p=1.0, lengths=(9, 9), max_angle=0)(t)
+    assert out.dtype == torch.uint8 and out.shape == t.shape
+    sharp = lambda x: x.float().diff(dim=2).abs().mean()  # noqa: E731
+    assert sharp(out) < sharp(t) / 2
+    assert torch.equal(RandomMotionBlur(p=0.0)(t), t)
+
+
+def test_dataset_with_motion_blur_augmentation():
+    import numpy as np
+    from roadsigns.classification.data import SignCropDataset
+    ds = SignCropDataset(np.zeros((2, 48, 48, 3), np.uint8), np.array([1, 2]), augment=True, motion_blur=True)
+    x, y = ds[0]
+    assert tuple(x.shape) == (3, 48, 48) and y == 1

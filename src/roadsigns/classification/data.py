@@ -75,25 +75,65 @@ def load_crops(samples: list[GTSRBSample], cache_path: Path | None = None) -> tu
     return images, labels
 
 
-def train_augmentation() -> v2.Compose:
+class RandomMotionBlur(torch.nn.Module):
+    """Directional (motion) blur on a uint8 3xHxW tensor, with probability ``p``.
+
+    The blur length is drawn in ``lengths`` (pixels at 48x48) and the direction mostly
+    horizontal (angle in ``max_angle`` degrees around it), like a car moving or turning.
+    Added after the robustness test showed motion blur is the only condition that makes
+    the CNN give WRONG names.
+    """
+
+    def __init__(self, p: float = 0.3, lengths: tuple[int, int] = (3, 11), max_angle: float = 20.0) -> None:
+        super().__init__()
+        self.p, self.lengths, self.max_angle = p, lengths, max_angle
+
+    def forward(self, t: torch.Tensor) -> torch.Tensor:
+        if torch.rand(1).item() >= self.p:
+            return t
+        length = int(torch.randint(self.lengths[0], self.lengths[1] + 1, (1,)).item())
+        angle = float((torch.rand(1).item() * 2 - 1) * self.max_angle)
+        kernel = motion_blur_kernel(length, angle)
+        img = t.permute(1, 2, 0).numpy()
+        out = cv2.filter2D(img, -1, kernel, borderType=cv2.BORDER_REFLECT)
+        return torch.from_numpy(np.ascontiguousarray(out)).permute(2, 0, 1)
+
+
+def motion_blur_kernel(length: int, angle_deg: float) -> np.ndarray:
+    """Normalised line kernel of ``length`` pixels at ``angle_deg`` (0 = horizontal)."""
+    length = max(1, int(length))
+    kernel = np.zeros((length, length), np.float32)
+    kernel[length // 2, :] = 1.0
+    if angle_deg:
+        rot = cv2.getRotationMatrix2D(((length - 1) / 2, (length - 1) / 2), angle_deg, 1.0)
+        kernel = cv2.warpAffine(kernel, rot, (length, length))
+    return kernel / max(kernel.sum(), 1e-6)
+
+
+def train_augmentation(motion_blur: bool = False) -> v2.Compose:
     """Realistic variations only. No horizontal/vertical flip: it would change a sign's
-    meaning ("turn left" <-> "turn right") or produce signs that do not exist."""
-    return v2.Compose([
+    meaning ("turn left" <-> "turn right") or produce signs that do not exist.
+    ``motion_blur`` adds RandomMotionBlur (classifier v2, see scripts/train_classifier.py)."""
+    steps = [
         v2.RandomAffine(degrees=10, translate=(0.08, 0.08), scale=(0.9, 1.1)),  # imprecise detector boxes, viewpoint
         v2.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.3, hue=0.02),  # lighting, weather
-        v2.RandomApply([v2.GaussianBlur(kernel_size=3, sigma=(0.1, 1.2))], p=0.2),  # motion / focus blur
-    ])
+        v2.RandomApply([v2.GaussianBlur(kernel_size=3, sigma=(0.1, 1.2))], p=0.2),  # focus blur
+    ]
+    if motion_blur:
+        steps.append(RandomMotionBlur())
+    return v2.Compose(steps)
 
 
 class SignCropDataset(Dataset):
     """In-memory dataset of 48x48 RGB crops."""
 
-    def __init__(self, images: np.ndarray, labels: np.ndarray, augment: bool = False) -> None:
+    def __init__(self, images: np.ndarray, labels: np.ndarray, augment: bool = False,
+                 motion_blur: bool = False) -> None:
         if len(images) != len(labels):
             raise ValueError("images and labels must have the same length")
         self.images = images
         self.labels = labels
-        self.augment = train_augmentation() if augment else None
+        self.augment = train_augmentation(motion_blur) if augment else None
 
     def __len__(self) -> int:
         return len(self.labels)
