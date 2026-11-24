@@ -20,8 +20,63 @@ def show_figures(key: str, items: list[tuple[str, str]], columns: int = 2) -> No
             col.image(str(path), caption=caption, width="stretch")
 
 
-tab_det, tab_cnn, tab_transfer, tab_base, tab_data = st.tabs(
-    ["Détecteur YOLO", "CNN (GTSRB)", "CNN sur GTSDB", "Baseline générique", "Données"])
+def _param(v) -> str:
+    return " / ".join(map(str, v)) if isinstance(v, (list, tuple)) else str(v)
+
+
+tab_sys, tab_rob, tab_det, tab_cnn, tab_transfer, tab_base, tab_data = st.tabs(
+    ["Système complet", "Robustesse", "Détecteur YOLO", "CNN (GTSRB)", "CNN sur GTSDB",
+     "Baseline générique", "Données"])
+
+with tab_sys:
+    m = R.load_metrics("pipeline")
+    if not m:
+        not_evaluated("système complet (détecteur + CNN)", R.command_for("pipeline"))
+    else:
+        d, e, b = m["detection"], m["end_to_end"], m["recognition_of_found_signs"]
+        kpi_row([
+            kpi(R.pct(e["recall"]), "Trouvés et bien nommés", f"{b['correct']} / {m['ground_truth_signs']} panneaux",
+                "green"),
+            kpi(str(b["wrong"]), "Mauvais noms", "le cas dangereux", "green" if b["wrong"] == 0 else "coral"),
+            kpi(str(d["false_alarms"]), "Fausses alarmes", f"précision {R.pct(d['precision'])}", "coral"),
+            kpi(f"{m['median_ms_per_image']} ms".replace(".", ","), "Par image", m["device"], "teal"),
+        ])
+        st.caption(f"Détecteur {m['detector']} + CNN {m['classifier']} · {m['images']} images de test GTSDB · "
+                   f"seuils détecteur {m['det_conf']} / CNN {m['cnn_conf']} · un panneau compte comme trouvé "
+                   f"si sa boîte recouvre la vraie (IoU ≥ {m['iou']}), et comme bien nommé si le CNN donne la "
+                   "bonne classe parmi 43.")
+        st.write("**Par taille de panneau (trouvés et bien nommés)**")
+        st.dataframe(pd.DataFrame([{"Taille": k, "Réussite": R.pct(v)}
+                                   for k, v in m["end_to_end_recall_by_size"].items()]),
+                     hide_index=True, width="stretch")
+        st.write("**Effet du seuil de confiance du CNN**")
+        st.dataframe(pd.DataFrame([{"Seuil CNN": t, "Bien nommés": v["correct"], "Mauvais noms": v["wrong"],
+                                    "Famille seulement (?)": v["fallback"]}
+                                   for t, v in m["cnn_threshold_sweep"].items()]),
+                     hide_index=True, width="stretch")
+
+with tab_rob:
+    m = R.load_metrics("robustness")
+    if not m:
+        not_evaluated("robustesse (conditions simulées)", R.command_for("robustness"))
+    else:
+        st.warning("Conditions **simulées** sur les images de test (assombrissement, flou, voile, bruit) : "
+                   "elles montrent à quelle vitesse le système se dégrade, pas son comportement sur de "
+                   "vraies photos de nuit ou à contre-jour.", icon=":material/science:")
+        show_figures("robustness", [("end_to_end_recall.png", "Panneaux trouvés et bien nommés selon la "
+                                     "dégradation")], columns=1)
+        rows = [{"Condition": "Images d'origine", "Niveau": "—",
+                 "Trouvés et bien nommés": R.pct(m["clean"]["end_to_end_recall"]),
+                 "Mauvais noms": m["clean"]["wrong"], "Famille seulement (?)": m["clean"]["fallback"],
+                 "Fausses alarmes": m["clean"]["false_alarms"]}]
+        for cond in m["conditions"].values():
+            for lv, r in cond["results"].items():
+                rows.append({"Condition": cond["label"], "Niveau": f"{lv} ({_param(cond['levels'][lv])})",
+                             "Trouvés et bien nommés": R.pct(r["end_to_end_recall"]), "Mauvais noms": r["wrong"],
+                             "Famille seulement (?)": r["fallback"], "Fausses alarmes": r["false_alarms"]})
+        st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
+        show_figures("robustness", [("examples.jpg", "Une image de test sous chaque condition (niveau moyen)")],
+                     columns=1)
 
 with tab_det:
     m = R.load_metrics("detector")
