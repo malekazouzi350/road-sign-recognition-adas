@@ -51,7 +51,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--classifier", type=Path, default=DEFAULT_CLASSIFIER)
     p.add_argument("--det-conf", type=float, default=0.25)
     p.add_argument("--cnn-conf", type=float, default=0.60)
-    p.add_argument("--imgsz", type=int, default=1024)
+    p.add_argument("--imgsz", type=int, default=1280)
     p.add_argument("--iou", type=float, default=0.5)
     p.add_argument("--merge-iou", type=float, default=0.6,
                    help="drop a box that overlaps a more confident one (any family); 0 = keep all boxes")

@@ -35,19 +35,21 @@ l'entraînement.
 | Notre CNN sur les panneaux découpés de GTSDB | accuracy | 99,59 % | `results/classifier_on_gtsdb/` |
 | Détecteur v1 (1024 px) | rappel / mAP50 | 95,3 % / 97,7 % | `results/detector/v1_quick/` |
 | Détecteur v2 (1280 px) | rappel / mAP50 | 97,4 % / 98,9 % | `results/detector/v2_1280/` (PR de Tasbih en cours) |
-| **Système complet** (détecteur v1 + CNN) | panneaux trouvés **et** bien nommés | **98,3 %** (355/361) | `results/pipeline/` |
-| Système complet | mauvais noms | **0** | `results/pipeline/` |
-| Système complet | fausses alarmes | 21 (94,4 % des boîtes sont des panneaux annotés) | `results/pipeline/` |
+| Système complet avec détecteur v1 | panneaux trouvés **et** bien nommés | 98,3 % (355/361), 21 fausses alarmes | historique Git de `results/pipeline/` |
+| **Système complet** (détecteur v2 + CNN) | panneaux trouvés **et** bien nommés | **98,9 %** (357/361) | `results/pipeline/` |
+| Système complet (v2) | mauvais noms | **0** | `results/pipeline/` |
+| Système complet (v2) | fausses alarmes | 25 (93,5 % des boîtes sont des panneaux annotés) | `results/pipeline/` |
 
 À savoir pour lire ces chiffres :
 
 - Le rappel du détecteur (protocole Ultralytics, la famille doit être juste) et celui du système
   complet (boîte trouvée, puis classe exacte vérifiée par le CNN) ne se mesurent pas de la même
   façon. Les deux sont valables, mais il faut dire lequel on cite.
-- Les 6 panneaux ratés par le système complet font tous moins de 32 px.
+- Le détecteur v2 (1280 px) est utilisé par défaut : il trouve 3 panneaux de plus que v1 (358 au lieu
+  de 355), surtout des petits (moins de 32 px : 96,9 % au lieu de 93,8 %), au prix de 4 fausses
+  alarmes de plus (25 au lieu de 21).
 - Une partie des « fausses alarmes » sont de vrais panneaux qui ne font pas partie des 43 classes
   annotées (arrêt interdit, arrêt de bus…). Le chiffre de 94,4 % est donc prudent.
-- Le système complet n'a pas encore été évalué avec le détecteur v2.
 
 ## Installation (Windows, PowerShell)
 
@@ -85,7 +87,7 @@ Ils ne sont **pas dans Git** (trop lourds, licences propres).
 - **Données** : suivre [`data/README.md`](data/README.md) pour télécharger GTSDB et GTSRB dans
   `data/raw/`.
 - **Poids** : récupérer sur le Google Drive de l'équipe et placer dans `models/weights/` :
-  - `detector_v1_quick.pt` (détecteur utilisé par l'application) ;
+  - `detector_v2_1280.pt` (détecteur utilisé par l'application) ;
   - `classifier_best.pt` (CNN).
 
 ## Lancer l'application
@@ -105,7 +107,7 @@ Le navigateur s'ouvre sur `http://localhost:8501`.
 | Évaluation | toutes les mesures et courbes de `results/` |
 | Paramètres | seuils du détecteur et du CNN, taille d'image, CPU ou GPU |
 
-Sans GPU, comptez environ 0,5 s par image. Les pages affichent un message clair si un fichier de
+Sans GPU, comptez environ 0,5 à 1 s par image (en 1280 px ; passez à 1024 px dans Paramètres pour aller plus vite). Les pages affichent un message clair si un fichier de
 poids manque.
 
 ## Reproduire les résultats

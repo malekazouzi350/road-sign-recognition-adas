@@ -82,11 +82,11 @@ def test_video_page_without_weights_and_without_upload(monkeypatch):
         sys.path.insert(0, str(app_dir))
     from components import detection as D
 
-    monkeypatch.setattr(D, "missing_weights", lambda: ["models/weights/detector_v1_quick.pt"])
+    monkeypatch.setattr(D, "missing_weights", lambda: ["models/weights/detector_v2_1280.pt"])
     at = testing.AppTest.from_file(str(app_dir / "app.py"), default_timeout=60)
     at.run()
     at.switch_page("pages/video_detection.py").run()
-    assert not at.exception and any("detector_v1_quick.pt" in e.value for e in at.error)
+    assert not at.exception and any("detector_v2_1280.pt" in e.value for e in at.error)
 
     monkeypatch.setattr(D, "missing_weights", lambda: [])
     at.run()

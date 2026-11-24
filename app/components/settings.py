@@ -6,7 +6,7 @@ import streamlit as st
 
 DEFAULTS = {
     "det_conf": 0.25,   # detector confidence threshold
-    "imgsz": 1024,      # detector input size (the model was trained at 1024)
+    "imgsz": 1280,      # detector input size (detector v2 was trained at 1280)
     "cnn_conf": 0.60,   # below this CNN confidence, only the super-category is shown
     "device": "auto",   # auto | cpu | cuda
 }
