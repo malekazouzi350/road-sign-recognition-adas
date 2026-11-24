@@ -81,3 +81,21 @@ def test_label_avoids_other_boxes_when_there_is_room():
     yield_box, arrow_box = (915, 150, 1022, 250), (930, 252, 1010, 335)
     x, y = place_label(arrow_box, (190, 24), (1360, 800), [], [yield_box])
     assert not _overlaps((x, y, x + 190, y + 24), yield_box)
+
+
+def test_central_square_is_centred_and_inside():
+    from roadsigns.pipeline import central_square
+    assert central_square(1000, 500) == (300, 50, 700, 450)
+
+
+def test_classify_closeup_returns_top3_sorted():
+    import numpy as np
+    from roadsigns.classification.model import TrafficSignCNN
+    from roadsigns.pipeline import RoadSignPipeline
+
+    pipe = object.__new__(RoadSignPipeline)  # CNN only: no detector weights needed
+    pipe.device = "cpu"
+    pipe.classifier = TrafficSignCNN(43).eval()
+    top = pipe.classify_closeup(np.random.default_rng(0).integers(0, 255, (240, 320, 3), dtype=np.uint8))
+    assert len(top) == 3 and top[0][2] >= top[1][2] >= top[2][2]
+    assert all(0 <= c < 43 and isinstance(n, str) for c, n, _ in top)

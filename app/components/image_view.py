@@ -103,3 +103,40 @@ def show_analysis(name: str, data: bytes, settings: dict, state_key: str = "imag
                            json.dumps(payload, ensure_ascii=False, indent=2, default=list),
                            f"{stem}_results.json", "application/json", icon=":material/data_object:")
 
+
+def show_closeup(name: str, data: bytes, settings: dict) -> None:
+    """Close-up mode: the CNN alone on the central square of the photo (no detector)."""
+    image = D.decode_image(data)
+    if image is None:
+        st.error(f"« {name} » n'est pas une image lisible.", icon=":material/broken_image:")
+        st.stop()
+    key = "closeup|" + D.image_key(data, settings)
+    cached = st.session_state.get("closeup_analysis")
+    if cached is None or cached["key"] != key:
+        try:
+            top, ms, device = D.classify_closeup(image, settings)
+        except Exception as exc:  # shown to the user instead of a Python traceback
+            st.error(f"L'analyse a échoué : {exc}", icon=":material/error:")
+            st.stop()
+        cached = {"key": key, "top": top, "ms": ms, "device": device}
+        st.session_state["closeup_analysis"] = cached
+        D.add_closeup_to_history(name, top, settings["cnn_conf"], ms, device)
+
+    top, threshold = cached["top"], float(settings["cnn_conf"])
+    _, best_name, best_p = top[0]
+    left, right = st.columns([1, 1])
+    with left:
+        st.image(D.to_rgb(D.draw_central_square(image)), width="stretch",
+                 caption="Zone donnée au CNN (cadre vert)")
+    with right:
+        if best_p >= threshold:
+            st.success(f"**{best_name}** : confiance {best_p:.2f}", icon=":material/check_circle:")
+        else:
+            st.warning(f"Panneau non reconnu : meilleure proposition « {best_name} » à {best_p:.2f}, "
+                       f"sous le seuil de {threshold:.2f}. Panneau hors des 43 classes, mal cadré ou flou ?",
+                       icon=":material/help:")
+        st.markdown("**Les 3 classes les plus probables selon le CNN**")
+        for _, cls_name, p in top:
+            st.progress(min(1.0, p), text=f"{cls_name} : {p:.2f}")
+        st.caption(f"CNN seul : {cached['ms']:.0f} ms · {cached['device']}. Le CNN choisit toujours parmi "
+                   "les 43 classes : un panneau qu'il ne connaît pas obtient simplement une confiance faible.")

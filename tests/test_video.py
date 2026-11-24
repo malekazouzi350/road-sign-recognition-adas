@@ -91,3 +91,37 @@ def test_video_page_without_weights_and_without_upload(monkeypatch):
     monkeypatch.setattr(D, "missing_weights", lambda: [])
     at.run()
     assert not at.exception and any("Importez une courte vidéo" in i.value for i in at.info)
+
+
+def test_4k_is_reduced_to_1280_keeping_the_aspect_ratio():
+    from roadsigns.video import output_size
+    assert output_size(3840, 2160, 1280) == (1280, 720)
+    assert output_size(1280, 720, 1280) == (1280, 720)
+    assert output_size(1920, 1080, None) == (1920, 1080)
+
+
+def test_large_video_is_written_reduced(tmp_path):
+    path = tmp_path / "big.avi"
+    writer = cv2.VideoWriter(str(path), cv2.VideoWriter_fourcc(*"MJPG"), 10, (1600, 900))
+    for _ in range(4):
+        writer.write(np.zeros((900, 1600, 3), dtype=np.uint8))
+    writer.release()
+    summary = process_video(FakePipeline(), path, tmp_path / "out", max_width=800)
+    assert summary.output_size == (800, 450)
+    assert read_info(summary.output_path).width == 800
+
+
+def test_disagreement_and_single_frame_signs_are_marked_to_check(video):
+    class Disagree(FakePipeline):
+        def predict(self, frame):
+            result = super().predict(frame)
+            if self.calls == 1:  # one frame: CNN says "Priority road" (other) inside a prohibitory box
+                result.detections.append(SignDetection((70, 10, 90, 30), 0.6, "prohibitory", 12,
+                                                       "Priority road", 0.89, 12, True, False))
+            return result
+
+    rows = {r["panneau"]: r for r in process_video(Disagree(), video, None, every_n=3).rows()}
+    assert rows["Stop"]["fiabilité"] == "confirmé" and rows["Stop"]["accord détecteur / CNN"] == "oui"
+    assert rows["Priority road"]["fiabilité"] == "à vérifier"
+    assert rows["Priority road"]["accord détecteur / CNN"] == "non (1 fois)"
+    assert rows["danger (?)"]["accord détecteur / CNN"] == "—"

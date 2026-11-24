@@ -7,7 +7,7 @@ from datetime import datetime
 import streamlit as st
 
 from components import detection as D
-from components.image_view import show_analysis
+from components.image_view import show_analysis, show_closeup
 from components.ui import page_header
 
 page_header("04", "Détection", "Détection par webcam",
@@ -25,9 +25,16 @@ st.caption(
     f"Réglages : seuil détecteur {settings['det_conf']:.2f} · seuil CNN {settings['cnn_conf']:.2f} · "
     f"{settings['imgsz']} px · calcul {settings['device']}  (modifiables dans « Paramètres »)"
 )
-st.info("Pour la démonstration : montrez à la caméra un panneau imprimé ou affiché sur un téléphone, "
-        "assez grand et bien éclairé. Le navigateur demande l'autorisation d'utiliser la caméra.",
-        icon=":material/photo_camera:")
+SCENE, CLOSEUP = "Scène de route (détecteur + CNN)", "Panneau en gros plan (CNN seul)"
+mode = st.radio("Mode", [SCENE, CLOSEUP], horizontal=True, label_visibility="collapsed")
+if mode == SCENE:
+    st.info("Montrez une scène avec des panneaux assez petits (photo de rue sur un téléphone, panneau "
+            "tenu à 1-2 m). Le détecteur a appris sur des routes : il ne trouve pas un panneau qui "
+            "remplit l'image. Le navigateur demande l'autorisation d'utiliser la caméra.",
+            icon=":material/photo_camera:")
+else:
+    st.info("Placez UN panneau au centre, qu'il remplisse le cadre vert. Le détecteur est sauté : "
+            "le centre de la photo est donné directement au CNN.", icon=":material/center_focus_strong:")
 
 photo = st.camera_input("Prendre une photo")
 if photo is None:
@@ -38,8 +45,11 @@ if st.session_state.get("webcam_photo_id") != photo.file_id:
     st.session_state["webcam_photo_id"] = photo.file_id
     st.session_state["webcam_photo_name"] = f"webcam_{datetime.now():%H%M%S}.jpg"
 
-show_analysis(st.session_state["webcam_photo_name"], photo.getvalue(), settings,
-              state_key="webcam_analysis", kind="webcam")
+if mode == SCENE:
+    show_analysis(st.session_state["webcam_photo_name"], photo.getvalue(), settings,
+                  state_key="webcam_analysis", kind="webcam")
+else:
+    show_closeup(st.session_state["webcam_photo_name"], photo.getvalue(), settings)
 
 st.caption("Mode photo : une image à la fois. Un flux vidéo continu demanderait une bibliothèque en plus "
            "(streamlit-webrtc) et un GPU pour être fluide. "
