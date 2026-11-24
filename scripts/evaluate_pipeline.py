@@ -53,6 +53,8 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--cnn-conf", type=float, default=0.60)
     p.add_argument("--imgsz", type=int, default=1024)
     p.add_argument("--iou", type=float, default=0.5)
+    p.add_argument("--merge-iou", type=float, default=0.6,
+                   help="drop a box that overlaps a more confident one (any family); 0 = keep all boxes")
     p.add_argument("--device", default="auto")
     p.add_argument("--samples", type=int, default=6, help="annotated images to save (errors first)")
     p.add_argument("--out", type=Path, default=REPO_ROOT / "results/pipeline")
@@ -73,7 +75,8 @@ def main() -> int:
     try:
         raw = parse_gt_file(args.gtsdb_root / "gt.txt")
         pipe = RoadSignPipeline(args.detector, args.classifier, device=args.device,
-                                det_conf=args.det_conf, cnn_conf=args.cnn_conf, imgsz=args.imgsz)
+                                det_conf=args.det_conf, cnn_conf=args.cnn_conf, imgsz=args.imgsz,
+                                merge_iou=args.merge_iou)
     except (FileNotFoundError, ValueError, RuntimeError) as exc:
         logger.error("%s", exc)
         return 1
@@ -142,6 +145,7 @@ def main() -> int:
         "date_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "detector": args.detector.name, "classifier": args.classifier.name, "device": pipe.device,
         "images": len(images), "det_conf": args.det_conf, "cnn_conf": args.cnn_conf, "iou": args.iou,
+        "merge_iou": args.merge_iou,
         "ground_truth_signs": n_gt, "predicted_boxes": n_pred,
         "detection": {"found": matched, "missed": n_gt - matched, "false_alarms": false_alarms,
                       "recall": ratio(matched, n_gt), "precision": ratio(matched, n_pred)},
