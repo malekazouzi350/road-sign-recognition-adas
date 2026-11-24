@@ -1,0 +1,242 @@
+{
+  "description": "Complete pipeline on SIMULATED degradations of the official GTSDB test images.",
+  "warning": "Simulations (darkening, blur, haze, noise), not real night or backlit photos.",
+  "date_utc": "2026-11-24T18:30:12+00:00",
+  "detector": "detector_v2_1280.pt",
+  "classifier": "classifier_best.pt",
+  "device": "cuda",
+  "images": 300,
+  "det_conf": 0.25,
+  "cnn_conf": 0.6,
+  "imgsz": 1280,
+  "iou": 0.5,
+  "seed": 0,
+  "clean": {
+    "signs": 361,
+    "boxes": 383,
+    "found": 358,
+    "correct": 357,
+    "wrong": 0,
+    "fallback": 1,
+    "missed": 3,
+    "false_alarms": 25,
+    "end_to_end_recall": 0.9889,
+    "detection_recall": 0.9917,
+    "detection_precision": 0.9347
+  },
+  "conditions": {
+    "night": {
+      "label": "Nuit (image sombre + bruit)",
+      "parameter": "(luminosité x, gamma, bruit σ)",
+      "levels": {
+        "1": [
+          0.5,
+          1.2,
+          4
+        ],
+        "2": [
+          0.3,
+          1.4,
+          6
+        ],
+        "3": [
+          0.15,
+          1.6,
+          8
+        ]
+      },
+      "results": {
+        "1": {
+          "signs": 361,
+          "boxes": 360,
+          "found": 341,
+          "correct": 340,
+          "wrong": 0,
+          "fallback": 1,
+          "missed": 20,
+          "false_alarms": 19,
+          "end_to_end_recall": 0.9418,
+          "detection_recall": 0.9446,
+          "detection_precision": 0.9472
+        },
+        "2": {
+          "signs": 361,
+          "boxes": 268,
+          "found": 258,
+          "correct": 254,
+          "wrong": 0,
+          "fallback": 4,
+          "missed": 103,
+          "false_alarms": 10,
+          "end_to_end_recall": 0.7036,
+          "detection_recall": 0.7147,
+          "detection_precision": 0.9627
+        },
+        "3": {
+          "signs": 361,
+          "boxes": 125,
+          "found": 121,
+          "correct": 107,
+          "wrong": 3,
+          "fallback": 11,
+          "missed": 240,
+          "false_alarms": 4,
+          "end_to_end_recall": 0.2964,
+          "detection_recall": 0.3352,
+          "detection_precision": 0.968
+        }
+      }
+    },
+    "motion_blur": {
+      "label": "Flou de bougé",
+      "parameter": "longueur du flou horizontal (px)",
+      "levels": {
+        "1": 5,
+        "2": 9,
+        "3": 15
+      },
+      "results": {
+        "1": {
+          "signs": 361,
+          "boxes": 354,
+          "found": 343,
+          "correct": 338,
+          "wrong": 0,
+          "fallback": 5,
+          "missed": 18,
+          "false_alarms": 11,
+          "end_to_end_recall": 0.9363,
+          "detection_recall": 0.9501,
+          "detection_precision": 0.9689
+        },
+        "2": {
+          "signs": 361,
+          "boxes": 312,
+          "found": 310,
+          "correct": 257,
+          "wrong": 12,
+          "fallback": 41,
+          "missed": 51,
+          "false_alarms": 2,
+          "end_to_end_recall": 0.7119,
+          "detection_recall": 0.8587,
+          "detection_precision": 0.9936
+        },
+        "3": {
+          "signs": 361,
+          "boxes": 196,
+          "found": 195,
+          "correct": 136,
+          "wrong": 18,
+          "fallback": 41,
+          "missed": 166,
+          "false_alarms": 1,
+          "end_to_end_recall": 0.3767,
+          "detection_recall": 0.5402,
+          "detection_precision": 0.9949
+        }
+      }
+    },
+    "haze": {
+      "label": "Voile clair (brouillard, contre-jour)",
+      "parameter": "part de blanc mélangée",
+      "levels": {
+        "1": 0.3,
+        "2": 0.5,
+        "3": 0.7
+      },
+      "results": {
+        "1": {
+          "signs": 361,
+          "boxes": 373,
+          "found": 355,
+          "correct": 352,
+          "wrong": 0,
+          "fallback": 3,
+          "missed": 6,
+          "false_alarms": 18,
+          "end_to_end_recall": 0.9751,
+          "detection_recall": 0.9834,
+          "detection_precision": 0.9517
+        },
+        "2": {
+          "signs": 361,
+          "boxes": 363,
+          "found": 350,
+          "correct": 344,
+          "wrong": 0,
+          "fallback": 6,
+          "missed": 11,
+          "false_alarms": 13,
+          "end_to_end_recall": 0.9529,
+          "detection_recall": 0.9695,
+          "detection_precision": 0.9642
+        },
+        "3": {
+          "signs": 361,
+          "boxes": 336,
+          "found": 327,
+          "correct": 310,
+          "wrong": 0,
+          "fallback": 17,
+          "missed": 34,
+          "false_alarms": 9,
+          "end_to_end_recall": 0.8587,
+          "detection_recall": 0.9058,
+          "detection_precision": 0.9732
+        }
+      }
+    },
+    "noise": {
+      "label": "Bruit du capteur",
+      "parameter": "bruit gaussien σ (niveaux de gris 0-255)",
+      "levels": {
+        "1": 10,
+        "2": 20,
+        "3": 35
+      },
+      "results": {
+        "1": {
+          "signs": 361,
+          "boxes": 360,
+          "found": 342,
+          "correct": 342,
+          "wrong": 0,
+          "fallback": 0,
+          "missed": 19,
+          "false_alarms": 18,
+          "end_to_end_recall": 0.9474,
+          "detection_recall": 0.9474,
+          "detection_precision": 0.95
+        },
+        "2": {
+          "signs": 361,
+          "boxes": 286,
+          "found": 280,
+          "correct": 277,
+          "wrong": 0,
+          "fallback": 3,
+          "missed": 81,
+          "false_alarms": 6,
+          "end_to_end_recall": 0.7673,
+          "detection_recall": 0.7756,
+          "detection_precision": 0.979
+        },
+        "3": {
+          "signs": 361,
+          "boxes": 178,
+          "found": 175,
+          "correct": 171,
+          "wrong": 0,
+          "fallback": 4,
+          "missed": 186,
+          "false_alarms": 3,
+          "end_to_end_recall": 0.4737,
+          "detection_recall": 0.4848,
+          "detection_precision": 0.9831
+        }
+      }
+    }
+  },
+  "median_ms_per_image": 36.6
+}

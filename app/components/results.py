@@ -26,6 +26,8 @@ SOURCES = {
     "classifier_on_gtsdb": (RESULTS / "classifier_on_gtsdb", "python scripts/evaluate_classifier_gtsdb.py"),
     "dataset": (RESULTS / "dataset" / "super", "python scripts/prepare_gtsdb.py"),
     "exploration": (RESULTS / "exploration", "notebooks/01_gtsdb_exploration.ipynb (Run All)"),
+    "pipeline": (RESULTS / "pipeline", "python scripts/evaluate_pipeline.py"),
+    "robustness": (RESULTS / "robustness", "python scripts/evaluate_robustness.py"),
 }
 
 
