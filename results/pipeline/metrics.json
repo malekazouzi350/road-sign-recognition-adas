@@ -1,9 +1,9 @@
 {
   "description": "Complete pipeline (team detector + team CNN) on the official GTSDB test images.",
   "trained_by_team": true,
-  "date_utc": "2026-11-24T16:21:18+00:00",
+  "date_utc": "2026-11-24T20:18:54+00:00",
   "detector": "detector_v2_1280.pt",
-  "classifier": "classifier_best.pt",
+  "classifier": "classifier_blur.pt",
   "device": "cuda",
   "images": 300,
   "det_conf": 0.25,
@@ -31,8 +31,8 @@
   },
   "end_to_end_recall_by_size": {
     "< 32 px": 0.9691,
-    "32-48 px": 0.9931,
-    ">= 48 px": 1.0
+    "32-48 px": 1.0,
+    ">= 48 px": 0.9916
   },
   "missed_by_size": {
     "< 32 px": "3/97",
@@ -51,9 +51,9 @@
       "fallback": 0
     },
     "0.5": {
-      "correct": 358,
+      "correct": 357,
       "wrong": 0,
-      "fallback": 0
+      "fallback": 1
     },
     "0.6": {
       "correct": 357,
@@ -61,21 +61,21 @@
       "fallback": 1
     },
     "0.7": {
-      "correct": 357,
+      "correct": 355,
       "wrong": 0,
-      "fallback": 1
+      "fallback": 3
     },
     "0.8": {
-      "correct": 356,
-      "wrong": 0,
-      "fallback": 2
-    },
-    "0.9": {
       "correct": 353,
       "wrong": 0,
       "fallback": 5
+    },
+    "0.9": {
+      "correct": 348,
+      "wrong": 0,
+      "fallback": 10
     }
   },
-  "median_ms_per_image": 24.7,
+  "median_ms_per_image": 30.5,
   "wrong_name_examples": []
 }

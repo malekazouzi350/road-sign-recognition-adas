@@ -53,7 +53,7 @@ SIZE_BINS = ((0, 32, "< 32 px"), (32, 48, "32-48 px"), (48, 64, "48-64 px"), (64
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--gtsdb-root", type=Path, default=REPO_ROOT / "data/raw/FullIJCNN2013")
-    p.add_argument("--weights", type=Path, default=REPO_ROOT / "models/weights/classifier_best.pt")
+    p.add_argument("--weights", type=Path, default=REPO_ROOT / "models/weights/classifier_blur.pt")
     p.add_argument("--jitter", type=float, default=0.15, help="max relative shift/resize of jittered boxes")
     p.add_argument("--device", default="auto")
     p.add_argument("--seed", type=int, default=0)

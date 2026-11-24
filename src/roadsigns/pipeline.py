@@ -34,7 +34,7 @@ from roadsigns.evaluation.matching import iou
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_DETECTOR = REPO_ROOT / "models" / "weights" / "detector_v2_1280.pt"  # v2: trained at 1280 px
-DEFAULT_CLASSIFIER = REPO_ROOT / "models" / "weights" / "classifier_best.pt"
+DEFAULT_CLASSIFIER = REPO_ROOT / "models" / "weights" / "classifier_blur.pt"  # v2: trained with motion blur
 
 # BGR colours per super-category (same palette as the slides and the app).
 SUPER_COLORS_BGR = {
